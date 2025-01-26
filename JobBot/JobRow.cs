@@ -2,8 +2,15 @@
 using System.Text.RegularExpressions;
 
 namespace JobBot;
-internal class JobRow
+public class JobRow
 {
+    public bool IsCurrentlySelected()
+    {
+        var div = Element.FindElement(By.XPath("./div/div"));
+        var atr = div.GetDomAttribute("aria-current");
+        return atr is not null;
+    }
+    public IWebElement Element => _element;
     private IWebElement _element;
     public long JobID;
     private IWebElement _jobTitle;
@@ -13,10 +20,10 @@ internal class JobRow
     private IWebElement _location;
     public string Location;
     private IWebElement? _payAndBenefits;
-    public int? HourlyMin;
-    public int? HourlyMax;
-    public int? SalaryMin;
-    public int? SalaryMax;
+    public decimal? HourlyMin;
+    public decimal? HourlyMax;
+    public decimal? SalaryMin;
+    public decimal? SalaryMax;
     public bool Has401k;
     public bool Dental;
     public bool Medical;
@@ -50,35 +57,15 @@ internal class JobRow
             {
                 if (thing.Contains("/yr"))
                 {
-                    var rangeMatch = Regex.Match(thing, @"\$(\d+)K/yr - \$(\d+)K/yr");
-                    var singleMatch = Regex.Match(thing, @"\$(\d+)K/yr");
-
-                    if (rangeMatch.Success)
-                    {
-                        SalaryMin = int.Parse(rangeMatch.Groups[1].Value) * 1000;
-                        SalaryMax = int.Parse(rangeMatch.Groups[2].Value) * 1000;
-                    }
-                    else if (singleMatch.Success)
-                    {
-                        SalaryMin = int.Parse(singleMatch.Groups[1].Value) * 1000;
-                        SalaryMax = SalaryMin;
-                    }
+                    var range = thing.GetSalaryRange();
+                    SalaryMin = range?.min;
+                    SalaryMax = range?.max;
                 }
                 else if (thing.Contains("/hr"))
                 {
-                    var rangeMatch = Regex.Match(thing, @"\$(\d+)/hr - \$(\d+)/hr");
-                    var singleMatch = Regex.Match(thing, @"\$(\d+)/hr");
-
-                    if (rangeMatch.Success)
-                    {
-                        HourlyMin = int.Parse(rangeMatch.Groups[1].Value);
-                        HourlyMax = int.Parse(rangeMatch.Groups[2].Value);
-                    }
-                    else if (singleMatch.Success)
-                    {
-                        HourlyMin = int.Parse(singleMatch.Groups[1].Value);
-                        HourlyMax = HourlyMin;
-                    }
+                    var range = thing.GetHourlyRange();
+                    HourlyMin = range?.min;
+                    HourlyMax = range?.max;
                 }
                 else
                 {

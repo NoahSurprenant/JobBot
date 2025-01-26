@@ -2,9 +2,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace JobBot;
 
@@ -73,10 +71,10 @@ public class Worker : BackgroundService
 
         //*[@id="main"]/div/div[2]/div[1]/div/ul
 
-        
 
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-        var xxx = w.Until(x => x.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")));
+        var xxx = new WebDriverWait(driver, TimeSpan.FromSeconds(30))
+            .Until(x => x.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")));
+
         await Task.Delay(2000);
 
         
@@ -86,26 +84,74 @@ public class Worker : BackgroundService
         var width = (long)driver.ExecuteScript("return window.innerWidth;");
         var height = (long)driver.ExecuteScript("return window.innerHeight;");
 
-        var typed = await jobRows.ToAsyncEnumerable().SelectAwait(async x =>
-        {
-            var location = x.Location;
-            var size = x.Size;
-
-            var inViewport = (location.X >= 0 &&
-                                location.Y >= 0 &&
-                                location.X + size.Width <= width &&
-                                location.Y + size.Height <= height);
-
-            if (inViewport is false)
+        var typed = await jobRows
+            .Take(3)
+            .ToAsyncEnumerable().SelectAwait(async x =>
             {
-                new Actions(driver).ScrollToElement(x).Perform();
+                var location = x.Location;
+                var size = x.Size;
+
+                var inViewport = (location.X >= 0 &&
+                                    location.Y >= 0 &&
+                                    location.X + size.Width <= width &&
+                                    location.Y + size.Height <= height);
+
+                if (inViewport is false)
+                {
+                    new Actions(driver).ScrollToElement(x).Perform();
+                    //await Wait(1, 1);
+                }
                 await Wait(1, 1);
-            }
-            return new JobRow(x);
-        }).ToArrayAsync();
+
+                var row = new JobRow(x);
+
+                LoadDetailPane(driver, x, row.JobID);
+
+                var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+                return new JobRowWithDetail(row, new(detailContent));
+            }).ToArrayAsync();
+
+
+        //var selected = typed.Select(x => x.IsCurrentlySelected()).ToArray();
+        var detailsPanes = typed.Select(x => x.JobDetailPane).ToArray();
+
+        var first = typed.First();
+        if (first.JobRow.IsCurrentlySelected() is false)
+        {
+            LoadDetailPane(driver, first.JobRow.Element, first.JobRow.JobID);
+        }
+
+        var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+        var dto = new JobDetailPane(detailContent);
+        dto.Header.Click();
+
+
+        var jobPage = new JobPage(driver);
 
         driver.Quit();
     }
+
+    /// <summary>
+    /// Click row in left side pane and waits until right pane has loaded
+    /// </summary>
+    /// <param name="driver"></param>
+    /// <param name="x"></param>
+    /// <param name="JobID"></param>
+    private static void LoadDetailPane(IWebDriver driver, IWebElement x, long JobID)
+    {
+        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        x.Click();
+
+        var xxx = w.Until(x =>
+        {
+            var jobTitleElement = x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
+            if (jobTitleElement is null)
+                return false;
+            var jobID = long.Parse(jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
+            return jobID == JobID;
+        });
+    }
+
     //https://devhints.io/xpath
     private async Task NavigateToJobsPage(ChromeDriver driver)
     {
@@ -191,4 +237,50 @@ public static class WebElementExt
             return null;
         }
     }
+
+    public static IWebElement? FindElementOrDefault(this IWebDriver element, By by)
+    {
+        try
+        {
+            return element.FindElement(by);
+        }
+        catch (NoSuchElementException)
+        {
+            return null;
+        }
+    }
+
+    public static Range? GetSalaryRange(this string input)
+    {
+        input = input.TrimStart("Starting at ".ToCharArray());
+        var rangeMatch = Regex.Match(input, @"\$(\d+(\.\d+)?)[Kk]/yr\s*-\s*\$(\d+(\.\d+)?)[Kk]/yr");
+        var singleRegex = Regex.Match(input, @"\$(\d+(\.\d+)?)[Kk]/yr");
+        if (rangeMatch.Success)
+        {
+            return new Range(decimal.Parse(rangeMatch.Groups[1].Value) * 1000, decimal.Parse(rangeMatch.Groups[3].Value) * 1000);
+        }
+        else if (singleRegex.Success)
+        {
+            return new Range(decimal.Parse(singleRegex.Groups[1].Value) * 1000, decimal.Parse(singleRegex.Groups[1].Value) * 1000);
+        }
+        return null;
+    }
+
+    public static Range? GetHourlyRange(this string input)
+    {
+        input = input.TrimStart("Starting at ".ToCharArray());
+        var rangeMatch = Regex.Match(input, @"\$(\d+(\.\d+)?)/hr\s*-\s*\$(\d+(\.\d+)?)/hr");
+        var singleMatch = Regex.Match(input, @"\$(\d+(\.\d+)?)/hr");
+        if (rangeMatch.Success)
+        {
+            return new Range(decimal.Parse(rangeMatch.Groups[1].Value), decimal.Parse(rangeMatch.Groups[3].Value));
+        }
+        else if (singleMatch.Success)
+        {
+            return new Range(decimal.Parse(singleMatch.Groups[1].Value), decimal.Parse(singleMatch.Groups[1].Value));
+        }
+        return null;
+    }
 }
+
+public record Range(decimal min, decimal max);
