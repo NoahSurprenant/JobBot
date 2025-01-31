@@ -1,11 +1,14 @@
 ﻿using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
 
 namespace JobBot;
 public class Header
 {
-    public void Click()
+    public void Click(IWebDriver driver)
     {
         _jobTitleElement.Click();
+        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
     }
 
     public long JobID;

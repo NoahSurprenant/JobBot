@@ -73,7 +73,7 @@ public class Worker : BackgroundService
 
 
         var xxx = new WebDriverWait(driver, TimeSpan.FromSeconds(30))
-            .Until(x => x.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")));
+            .Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")) is not null);
 
         await Task.Delay(2000);
 
@@ -85,7 +85,7 @@ public class Worker : BackgroundService
         var height = (long)driver.ExecuteScript("return window.innerHeight;");
 
         var typed = await jobRows
-            .Take(3)
+            //.Take(3)
             .ToAsyncEnumerable().SelectAwait(async x =>
             {
                 var location = x.Location;
@@ -123,7 +123,7 @@ public class Worker : BackgroundService
 
         var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
         var dto = new JobDetailPane(detailContent);
-        dto.Header.Click();
+        dto.Header.Click(driver);
 
 
         var jobPage = new JobPage(driver);
@@ -170,7 +170,7 @@ public class Worker : BackgroundService
     /// <param name="job"></param>
     /// <param name="location"></param>
     /// <returns></returns>
-    private async Task Search(ChromeDriver driver, string job, string location)
+    private async Task Search(ChromeDriver driver, string job, string location, bool easyApply = true)
     {
         //*[@id="jobs-search-box-keyword-id-ember29"]
         //*[@id="jobs-search-box-keyword-id-ember213"]
@@ -197,6 +197,13 @@ public class Worker : BackgroundService
             // instead of being weird and hitting enter on location when we are not touching it
             title.SendKeys(Keys.Enter);
         }
+        //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[7]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
+        //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
+        var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li/div/button[text()=\"Easy Apply\"]")));
+        var eaValue = ea!.GetDomAttribute("aria-checked");
+        var eaBool = bool.Parse(eaValue);
+        if (eaBool != easyApply)
+            ea!.Click();
         await Wait();
     }
 
