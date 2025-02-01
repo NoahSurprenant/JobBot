@@ -13,6 +13,7 @@ public class Header
 
     public long JobID;
     public string CompanyName;
+    public string? CompanyLink;
     public string JobTitle;
     public string Location;
     public bool IsRepost;
@@ -32,7 +33,9 @@ public class Header
     public Header(IWebElement header, long? jobID = null)
     {
         _header = header;
-        CompanyName = _header.FindElement(By.XPath("./div[1]/div[1]/div/a")).Text;
+        var companyLink = _header.FindElementOrDefault(By.XPath("./div[1]/div[1]/div/a")); // Sometime there will be no link
+        CompanyName = companyLink?.Text ?? _header.FindElement(By.XPath("./div[1]/div[1]/div")).Text;
+        CompanyLink = companyLink?.GetDomAttribute("href").Replace("https://www.linkedin.com/company/", "");
         _jobTitleElement = _header.FindElementOrDefault(By.XPath("./div[2]/div/h1/a")) ?? _header.FindElement(By.XPath("./div[2]/div/h1"));
         JobID = jobID ?? long.Parse(_jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
         JobTitle = _jobTitleElement.Text;
@@ -51,6 +54,8 @@ public class Header
             "days" or "day" => DurationKind.Days,
             "weeks" or "week" => DurationKind.Weeks,
             "months" or "month" => DurationKind.Months,
+            "minutes" or "minute" => DurationKind.Minutes,
+            "seconds" or "second" => DurationKind.Seconds, // Haven't seen this yet but best to assume it can happen
             _ => throw new ArgumentOutOfRangeException(nameof(durationStr), durationStr, $"Expected days or weeks but got **{durationStr}**"),
         };
 

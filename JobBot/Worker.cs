@@ -1,3 +1,5 @@
+using JobBot.Database;
+using Microsoft.EntityFrameworkCore;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
@@ -8,13 +10,15 @@ namespace JobBot;
 
 public class Worker : BackgroundService
 {
+    private readonly IDbContextFactory<DataContext> _factory;
     private readonly ILogger<Worker> _logger;
     private readonly Random _random = new Random();
     private readonly string _proxy;
     private readonly string _cache;
 
-    public Worker(ILogger<Worker> logger, IConfiguration configuration)
+    public Worker(IDbContextFactory<DataContext> factory, ILogger<Worker> logger, IConfiguration configuration)
     {
+        _factory = factory;
         _logger = logger;
         _proxy = configuration.GetValue<string>("Proxy") ?? throw new Exception("Missing proxy");
         _cache = configuration.GetValue<string>("Cache") ?? throw new Exception("Missing cache location");
@@ -67,18 +71,65 @@ public class Worker : BackgroundService
 
         var job = "developer";
         var location = "Detroit Metropolitan Area";
+        var result = await Apply(driver, job, location, 75);
+
+        driver.Quit();
+    }
+
+    private async Task<List<JobRowWithDetail>> Apply(ChromeDriver driver, string job, string location, int applyCount)
+    {
         await Search(driver, job, location);
 
         //*[@id="main"]/div/div[2]/div[1]/div/ul
 
-
         var xxx = new WebDriverWait(driver, TimeSpan.FromSeconds(30))
             .Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")) is not null);
+        var list = new List<JobRowWithDetail>();
 
         await Task.Delay(2000);
 
-        
+        var loop = true;
+        var count = 0;
+        while (loop)
+        {
+            var r = await CoreLoop(driver);
+            list.AddRange(r);
+            count += r.Length;
+            //count += 1;
 
+            if (count < applyCount)
+            {
+                //var page = driver.FindElements(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[1]/div/div[3]/div[2]/ul/li/button"));
+                var page = driver.FindElements(By.XPath("//*[@id=\"jobs-search-results-footer\"]/div[2]/ul/li/button"));
+                var currentPage = page.Where(x => x.GetDomAttribute("aria-current") is not null).Select(x => int.Parse(x.GetDomAttribute("aria-label").Replace("Page ", ""))).FirstOrDefault();
+                var next = currentPage + 1;
+                var all = page.Select(x => int.Parse(x.GetDomAttribute("aria-label").Replace("Page ", ""))).ToArray();
+                if (all.Any(x => x == next))
+                {
+                    // Click next page
+                    var btn = page.FirstOrDefault(x => x.GetDomAttribute("aria-label") == "Page " + next)
+                        ?? throw new Exception("Failed to find button for Page " + next);
+                    btn.Click();
+                    // Wait until load
+                    await Wait(4, 6);
+                }
+                else // Ran out of pages
+                {
+                    loop = false;
+                }
+            }
+            else
+            {
+                loop = false;
+            }
+        }
+        
+        return list;
+    }
+
+    private async Task<JobRowWithDetail[]> CoreLoop(ChromeDriver driver)
+    {
+        using var context = _factory.CreateDbContext();
         var jobRows = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li"));
 
         var width = (long)driver.ExecuteScript("return window.innerWidth;");
@@ -86,7 +137,16 @@ public class Worker : BackgroundService
 
         var typed = await jobRows
             //.Take(3)
-            .ToAsyncEnumerable().SelectAwait(async x =>
+            .ToAsyncEnumerable()
+            // I don't want to pull data I already have
+            .Where(x =>
+            {
+                //return true;
+                var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
+                var existing = context.JobPostings.Any(x => x.JobPostingID == JobID);
+                return existing is false;
+            })
+            .SelectAwait(async x =>
             {
                 var location = x.Location;
                 var size = x.Size;
@@ -111,24 +171,23 @@ public class Worker : BackgroundService
                 return new JobRowWithDetail(row, new(detailContent));
             }).ToArrayAsync();
 
+        var dbRows = typed.Select(JobPosting.Create).ToArray();
+        context.AddRange(dbRows);
+        context.SaveChanges();
 
-        //var selected = typed.Select(x => x.IsCurrentlySelected()).ToArray();
-        var detailsPanes = typed.Select(x => x.JobDetailPane).ToArray();
+        // Example selecting row and then going to job page
+        //var first = typed.First();
+        //if (first.JobRow.IsCurrentlySelected() is false)
+        //{
+        //    LoadDetailPane(driver, first.JobRow.Element, first.JobRow.JobID);
+        //}
 
-        var first = typed.First();
-        if (first.JobRow.IsCurrentlySelected() is false)
-        {
-            LoadDetailPane(driver, first.JobRow.Element, first.JobRow.JobID);
-        }
+        //var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+        //var dto = new JobDetailPane(detailContent);
+        //dto.Header.Click(driver);
 
-        var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-        var dto = new JobDetailPane(detailContent);
-        dto.Header.Click(driver);
-
-
-        var jobPage = new JobPage(driver);
-
-        driver.Quit();
+        //var jobPage = new JobPage(driver);
+        return typed;
     }
 
     /// <summary>
@@ -175,7 +234,7 @@ public class Worker : BackgroundService
         //*[@id="jobs-search-box-keyword-id-ember29"]
         //*[@id="jobs-search-box-keyword-id-ember213"]
         var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-        var title = w.Until(x => x.FindElement(By.XPath("//*[starts-with(@id,'jobs-search-box-keyword-id-ember')]")));
+        var title = w.Until(x => x.FindElementOrDefault(By.XPath("//*[starts-with(@id,'jobs-search-box-keyword-id-ember')]"))!);
         title.Click();
         await title.SendHumanKeys(job);
 
@@ -199,7 +258,7 @@ public class Worker : BackgroundService
         }
         //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[7]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
         //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
-        var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li/div/button[text()=\"Easy Apply\"]")));
+        var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div/div[3]/div[4]/section/div/section/div/div/div/ul/li/div/button[text()=\"Easy Apply\"]")));
         var eaValue = ea!.GetDomAttribute("aria-checked");
         var eaBool = bool.Parse(eaValue);
         if (eaBool != easyApply)

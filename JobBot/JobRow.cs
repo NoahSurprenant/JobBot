@@ -86,13 +86,13 @@ public class JobRow
 
                 }
             }
-            _bottomRow = _element.FindElement(By.XPath("./div/div/div[1]/ul"));
-            _viewed = _bottomRow.FindElementOrDefault(By.XPath("./li[text()=\"Viewed\"]"));
-            Viewed = _viewed is not null;
-            _promoted = _bottomRow.FindElementOrDefault(By.XPath("./li[span[text()=\"Promoted\"]]"));
-            Promoted = _promoted is not null;
-            _easyApply = _bottomRow.FindElementOrDefault(By.XPath("./li/span[text()=\"Easy Apply\"]"));
-            EasyApply = _easyApply is not null;
         }
+        _bottomRow = _element.FindElement(By.XPath("./div/div/div[1]/ul"));
+        _viewed = _bottomRow.FindElementOrDefault(By.XPath("./li[text()=\"Viewed\"]"));
+        Viewed = _viewed is not null;
+        _promoted = _bottomRow.FindElementOrDefault(By.XPath("./li[span[text()=\"Promoted\"]]"));
+        Promoted = _promoted is not null;
+        _easyApply = _bottomRow.FindElementOrDefault(By.XPath("./li/span[text()=\"Easy Apply\"]"));
+        EasyApply = _easyApply is not null;
     }
 }

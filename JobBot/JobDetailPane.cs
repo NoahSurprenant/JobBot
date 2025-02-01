@@ -19,6 +19,8 @@ public enum DurationKind
     Days,
     Weeks,
     Months,
+    Minutes,
+    Seconds,
 }
 
 public enum OfficeKind
