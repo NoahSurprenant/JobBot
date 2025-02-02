@@ -27,7 +27,10 @@ namespace JobBot.Migrations
                     Medical = table.Column<bool>(type: "INTEGER", nullable: false),
                     Vision = table.Column<bool>(type: "INTEGER", nullable: false),
                     EasyApply = table.Column<bool>(type: "INTEGER", nullable: false),
-                    DatePulled = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Applied = table.Column<bool>(type: "INTEGER", nullable: false),
+                    NoApplyReason = table.Column<string>(type: "TEXT", nullable: true),
+                    DatePulled = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastDatePulled = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

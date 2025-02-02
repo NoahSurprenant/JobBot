@@ -30,6 +30,7 @@ public class JobRow
     public bool Vision;
     public int OtherBenefitsCount;
     private IWebElement _bottomRow;
+    public bool Applied;
     private IWebElement? _viewed;
     public bool Viewed;
     private IWebElement? _promoted;
@@ -88,6 +89,7 @@ public class JobRow
             }
         }
         _bottomRow = _element.FindElement(By.XPath("./div/div/div[1]/ul"));
+        Applied = _bottomRow.FindElementOrDefault(By.XPath("./li[text()=\"Applied\"]")) is not null;
         _viewed = _bottomRow.FindElementOrDefault(By.XPath("./li[text()=\"Viewed\"]"));
         Viewed = _viewed is not null;
         _promoted = _bottomRow.FindElementOrDefault(By.XPath("./li[span[text()=\"Promoted\"]]"));

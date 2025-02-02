@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250201221600_InitialMigration")]
+    [Migration("20250202004115_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -26,6 +26,9 @@ namespace JobBot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Applied")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("CompanyLink")
@@ -54,12 +57,18 @@ namespace JobBot.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("LastDatePulled")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Medical")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("NoApplyReason")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Vision")
                         .HasColumnType("INTEGER");

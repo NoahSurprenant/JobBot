@@ -56,7 +56,10 @@ public class JobPosting
     public bool Medical { get; set; }
     public bool Vision { get; set; }
     public bool EasyApply { get; set; }
+    public bool Applied { get; set; }
+    public string? NoApplyReason { get; set; }
     public DateTime DatePulled { get; set; }
+    public DateTime LastDatePulled { get; set; }
 
     public static JobPosting Create(JobRowWithDetail x)
     {
@@ -81,7 +84,36 @@ public class JobPosting
         y.Medical = x.JobRow.Medical;
         y.Vision = x.JobRow.Vision;
         y.EasyApply = x.JobRow.EasyApply;
+        y.Applied = x.JobRow.Applied;
         y.DatePulled = DateTime.UtcNow;
+        y.LastDatePulled = y.DatePulled;
         return y;
+    }
+
+    public JobPosting Update(JobRowWithDetail x)
+    {
+        JobPostingID = x.JobRow.JobID;
+        CompanyName = x.JobRow.CompanyName;
+        CompanyLink = x.JobDetailPane.Header.CompanyLink;
+        JobTitle = x.JobRow.JobTitle;
+        Location = x.JobRow.Location;
+        IsRepost = x.JobDetailPane.Header.IsRepost;
+        Amount = x.JobDetailPane.Header.Amount;
+        DurationKind = x.JobDetailPane.Header.DurationKind;
+        Applicants = x.JobDetailPane.Header.Applicants;
+        OfficeKind = x.JobDetailPane.Header.OfficeKind;
+        TimeKind = x.JobDetailPane.Header.TimeKind;
+        HourlyMin = x.JobDetailPane.Header.HourlyMin;
+        HourlyMax = x.JobDetailPane.Header.HourlyMax;
+        SalaryMin = x.JobDetailPane.Header.SalaryMin;
+        SalaryMax = x.JobDetailPane.Header.SalaryMax;
+        Has401k = x.JobRow.Has401k;
+        Dental = x.JobRow.Dental;
+        Medical = x.JobRow.Medical;
+        Vision = x.JobRow.Vision;
+        EasyApply = x.JobRow.EasyApply;
+        Applied = x.JobRow.Applied;
+        LastDatePulled = DateTime.UtcNow;
+        return this;
     }
 }

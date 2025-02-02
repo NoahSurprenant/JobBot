@@ -25,6 +25,9 @@ namespace JobBot.Migrations
                     b.Property<int>("Amount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Applied")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("CompanyLink")
                         .HasColumnType("TEXT");
 
@@ -51,12 +54,18 @@ namespace JobBot.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("LastDatePulled")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Medical")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("NoApplyReason")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Vision")
                         .HasColumnType("INTEGER");

@@ -27,6 +27,7 @@ public class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var options = new ChromeOptions();
+        options.AddArgument("--start-maximized");
         options.AddArgument("--disable-blink-features=AutomationControlled");
         options.AddArgument($"user-data-dir={_cache}");
         //options.AddArgument("--remote-debugging-port=9292");
@@ -71,12 +72,22 @@ public class Worker : BackgroundService
 
         var job = "developer";
         var location = "Detroit Metropolitan Area";
-        var result = await Apply(driver, job, location, 75);
+        var result = await Apply(driver, job, location, 10, 20);
 
         driver.Quit();
     }
 
-    private async Task<List<JobRowWithDetail>> Apply(ChromeDriver driver, string job, string location, int applyCount)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="driver">Selenium web driver</param>
+    /// <param name="job">Job title to search for</param>
+    /// <param name="location">location to search for</param>
+    /// <param name="maxApplyCount">Max number of jobs to apply to</param>
+    /// <param name="maxReadCount">Max number of rows to check before giving up, usually a higher number than applyCount</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    private async Task<List<JobRowWithDetail>> Apply(ChromeDriver driver, string job, string location, int maxApplyCount, int maxReadCount)
     {
         await Search(driver, job, location);
 
@@ -89,15 +100,19 @@ public class Worker : BackgroundService
         await Task.Delay(2000);
 
         var loop = true;
-        var count = 0;
+        var applyCount = 0;
+        var readCount = 0;
         while (loop)
         {
-            var r = await CoreLoop(driver);
+            var appliesRemaining = maxApplyCount - applyCount;
+            var readsRemaining = maxReadCount - readCount;
+            var r = await CoreLoop(driver, appliesRemaining, readsRemaining);
             list.AddRange(r);
-            count += r.Length;
+            applyCount += r.Length;
+            readCount += 25;
             //count += 1;
 
-            if (count < applyCount)
+            if (applyCount < maxApplyCount && readCount < maxReadCount)
             {
                 //var page = driver.FindElements(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[1]/div/div[3]/div[2]/ul/li/button"));
                 var page = driver.FindElements(By.XPath("//*[@id=\"jobs-search-results-footer\"]/div[2]/ul/li/button"));
@@ -127,53 +142,82 @@ public class Worker : BackgroundService
         return list;
     }
 
-    private async Task<JobRowWithDetail[]> CoreLoop(ChromeDriver driver)
+    private async Task<JobRowWithDetail[]> CoreLoop(ChromeDriver driver, int appliesRemaining, int readsRemaining)
     {
         using var context = _factory.CreateDbContext();
-        var jobRows = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li"));
+        var jobRows = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Take(readsRemaining);
 
         var width = (long)driver.ExecuteScript("return window.innerWidth;");
         var height = (long)driver.ExecuteScript("return window.innerHeight;");
 
-        var typed = await jobRows
-            //.Take(3)
-            .ToAsyncEnumerable()
-            // I don't want to pull data I already have
-            .Where(x =>
+        var list = new List<JobRowWithDetail>();
+        var count = 0;
+        foreach (var x in jobRows)
+        {
+            var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
+            var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == JobID);
+            if (existing is not null && existing.NoApplyReason is not null)
             {
-                //return true;
-                var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
-                var existing = context.JobPostings.Any(x => x.JobPostingID == JobID);
-                return existing is false;
-            })
-            .SelectAwait(async x =>
+                continue;
+            }
+
+            var location = x.Location;
+            var size = x.Size;
+
+            var inViewport = (location.X >= 0 &&
+                                location.Y >= 0 &&
+                                location.X + size.Width <= width &&
+                                location.Y + size.Height <= height);
+
+            if (inViewport is false)
             {
-                var location = x.Location;
-                var size = x.Size;
+                new Actions(driver).ScrollToElement(x).Perform();
+                //await Wait(1, 1);
+            }
+            await Wait(1, 1);
 
-                var inViewport = (location.X >= 0 &&
-                                    location.Y >= 0 &&
-                                    location.X + size.Width <= width &&
-                                    location.Y + size.Height <= height);
+            var row = new JobRow(x);
 
-                if (inViewport is false)
+            LoadDetailPane(driver, x, row.JobID);
+
+            
+
+            var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+            var item = new JobRowWithDetail(row, new(detailContent));
+
+            //upsert
+            var dbRow = existing?.Update(item) ?? JobPosting.Create(item);
+            if (existing is null)
+                context.Add(dbRow);
+
+            // Missing in db
+            if (row.Applied)
+            {
+                // We need to add to db only. No apply action needed.
+            }
+            else if (count < appliesRemaining) // Should we apply?
+            {
+                if (item.JobRow.JobTitle.Contains("wordpress"))
                 {
-                    new Actions(driver).ScrollToElement(x).Perform();
-                    //await Wait(1, 1);
+                    dbRow.NoApplyReason = "Wordpress";
                 }
-                await Wait(1, 1);
+                else if (dbRow.NoApplyReason is not null)
+                {
 
-                var row = new JobRow(x);
+                }
+                else
+                {
+                    // Do apply here!
+                    row.Applied = true;
+                    dbRow.Applied = true;
+                    count++;
+                    list.Add(item);
+                }
+            }
 
-                LoadDetailPane(driver, x, row.JobID);
-
-                var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-                return new JobRowWithDetail(row, new(detailContent));
-            }).ToArrayAsync();
-
-        var dbRows = typed.Select(JobPosting.Create).ToArray();
-        context.AddRange(dbRows);
-        context.SaveChanges();
+            
+            context.SaveChanges();
+        }
 
         // Example selecting row and then going to job page
         //var first = typed.First();
@@ -187,7 +231,7 @@ public class Worker : BackgroundService
         //dto.Header.Click(driver);
 
         //var jobPage = new JobPage(driver);
-        return typed;
+        return list.ToArray();
     }
 
     /// <summary>
