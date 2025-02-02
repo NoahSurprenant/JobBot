@@ -12,9 +12,15 @@ public class Header
         w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
     }
 
-    public void ClickEasyApply(IWebDriver driver)
+    public async Task ClickEasyApply(IWebDriver driver)
     {
+        if (_applyElement is null)
+            throw new Exception("Cannot apply to job there is not easy apply " + JobID);
         _applyElement.Click();
+        await Task.Delay(1000);
+        var btn = driver.FindElementOrDefault(By.XPath("//span[text()=\"Continue applying\"]/.."));
+        if (btn is not null)
+            btn.Click();
         var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
         w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"jobs-apply-header\"]"))?.Text == "Apply to " + CompanyName);
     }
@@ -37,7 +43,7 @@ public class Header
 
     private readonly IWebElement _header;
     private readonly IWebElement _jobTitleElement;
-    private readonly IWebElement _applyElement;
+    private readonly IWebElement? _applyElement;
 
     // Full:
     //*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/./div[1]/div/div[1]/div
@@ -114,7 +120,7 @@ public class Header
 
         try
         {
-            _applyElement = _header.FindElement(By.XPath("./div[5]/div/div/div/button/span"));
+            _applyElement = _header.FindElementOrDefault(By.XPath("./div[5]/div/div/div/button/span"));
         }
         catch (Exception ex)
         {

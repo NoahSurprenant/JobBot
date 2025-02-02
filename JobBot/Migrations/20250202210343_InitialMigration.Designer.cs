@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250202045720_InitialMigration")]
+    [Migration("20250202210343_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -23,6 +23,10 @@ namespace JobBot.Migrations
             modelBuilder.Entity("JobBot.Database.ComboBox", b =>
                 {
                     b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SelectedOptionValue")
@@ -142,6 +146,10 @@ namespace JobBot.Migrations
             modelBuilder.Entity("JobBot.Database.SingleLine", b =>
                 {
                     b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SingleLineValue")

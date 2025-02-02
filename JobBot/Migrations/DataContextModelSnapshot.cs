@@ -22,6 +22,10 @@ namespace JobBot.Migrations
                     b.Property<string>("Key")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SelectedOptionValue")
                         .HasColumnType("TEXT");
 
@@ -139,6 +143,10 @@ namespace JobBot.Migrations
             modelBuilder.Entity("JobBot.Database.SingleLine", b =>
                 {
                     b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SingleLineValue")

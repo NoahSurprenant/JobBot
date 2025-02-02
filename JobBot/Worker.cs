@@ -156,7 +156,7 @@ public class Worker : BackgroundService
         {
             var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
             var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == JobID);
-            if (existing is not null && existing.NoApplyReason is not null)
+            if (existing is not null || existing is not null && existing.NoApplyReason is not null)
             {
                 continue;
             }
@@ -203,26 +203,31 @@ public class Worker : BackgroundService
                 {
                     dbRow.NoApplyReason = "Wordpress";
                 }
+                else if (item.JobRow.EasyApply is false)
+                {
+                    dbRow.NoApplyReason = "No easy apply";
+                }
                 else if (dbRow.NoApplyReason is not null)
                 {
 
                 }
                 else
                 {
-                    item.JobDetailPane.Header.ClickEasyApply(driver);
+                    await item.JobDetailPane.Header.ClickEasyApply(driver);
                     await Wait(1, 1);
                     var follow = driver.FindElementOrDefault(By.XPath("//*[@id=\"follow-company-checkbox\"]"));
                     if (follow is not null)
                     {
+                        var followLabel = driver.FindElement(By.XPath("//label[@for='follow-company-checkbox']"));
                         var before = follow.Selected;
                         if (follow.Selected is true)
                         {
-                            follow.Click();
+                            followLabel.Click();
                         }
                         var after = follow.Selected;
                     }
 
-                    if (existing is null)
+                    if (existing is not null)
                     {
                         // Pull related data
                         dbRow.JobPostingSingleLines = context
@@ -239,112 +244,94 @@ public class Worker : BackgroundService
                             .ToHashSet();
                     }
 
-                    var form = driver.FindElement(By.XPath("//form[1]"));
+                    var questions = new Questions(driver, JobID);
 
-                    var foo = form.FindElements(By.XPath("./div/div/div"));
+                    var toRemove1 = dbRow.JobPostingSingleLines.ExceptBy(questions.Singles.Select(x => x.Key), x => x.Key);
+                    var toRemove2 = dbRow.JobPostingComboBoxes.ExceptBy(questions.Combos.Select(x => x.Key), x => x.Key);
+                    foreach(var o in toRemove1)
+                        dbRow.JobPostingSingleLines.Remove(o);
+                    foreach (var o in toRemove2)
+                        dbRow.JobPostingComboBoxes.Remove(o);
 
-                    // First is contact div. Rest are div with class like qKaYReXtKxWInYNdGaWKNtCOycgtsjDHelqpS
-                    var yy = foo.Skip(1).ToList();
-
-                    foreach (var y in yy)
+                    foreach (var question in questions.Singles)
                     {
-                        // inner div has class fb-dash-form-element and jbVwHDGaAjptFLyyeygpxWihBejjeLeVv and each has differetn mt1 etc
-                        // style="width:100%" tabindex="-1" data-test-form-element=""
-                        // second inner div has data-test-text-entity-list-form-component="" OR data-test-single-line-text-form-component="" data-live-test-single-line-text-form-component=""
-                        var inner = y.FindElement(By.XPath("./div/div"));
-
-                        var combo = inner.GetDomAttribute("data-test-text-entity-list-form-component") is not null;
-                        var single = inner.GetDomAttribute("data-test-single-line-text-form-component") is not null && inner.GetDomAttribute("data-live-test-single-line-text-form-component") is not null;
-
-                        if (combo)
+                        var singleLine = context.SingleLines
+                            .FirstOrDefault(x => x.Key == question.Key);
+                        if (singleLine is null)
                         {
-                            var label = inner.FindElement(By.XPath("./label"));
-                            var select = inner.FindElement(By.XPath("./select"));
-                            var options = select.FindElements(By.XPath("./option"));
-                            var optionValues = options.Skip(1).Select(x => x.GetDomAttribute("value")).ToArray();
-                            if (optionValues.Any() is false)
-                                throw new Exception("Failed to get options");
-                            var forAtr = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
-                            forAtr = forAtr.Replace("text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-" + JobID + "-", "");
-
-                            var comboBox = context.ComboBoxes
-                                .Include(x => x.SelectedComboBoxOption!.ComboBox)
-                                .Include(x => x.ComboBoxOptions)
-                                .FirstOrDefault(x => x.Key == forAtr);
-                            if (comboBox is null)
+                            singleLine = new SingleLine()
                             {
-                                comboBox = new ComboBox()
-                                {
-                                    Key = forAtr,
-                                    //SelectedOptionValue = "" // should be setting this
-                                    ComboBoxOptions = optionValues.Select(x => new ComboBoxOption()
-                                    {
-                                        Key = forAtr,
-                                        OptionValue = x
-                                    }).ToHashSet(),
-                                };
-                                context.ComboBoxes.Add(comboBox);
-                            }
-                            else // Upsert options?, update selected value
-                            {
-
-                            }
-
-                            if (dbRow.JobPostingComboBoxes.Any(x => x.Key == forAtr) is false)
-                            {
-                                dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
-                                {
-                                    ComboBox = comboBox,
-                                });
-                                // Make list to track so later we know what to remove?
-                            }
-
-                            context.SaveChanges();
+                                Key = question.Key,
+                                Label = question.Label,
+                                SingleLineValue = question.Input,
+                            };
+                            context.SingleLines.Add(singleLine);
                         }
-                        else if (single)
+                        else // update selected value?
                         {
-                            // First div appears to be what we want
-                            // Second appears to be errors
-                            var firstDiv = inner.FindElement(By.XPath("./div[1]/div"));
-                            var label = firstDiv.FindElement(By.XPath("./label")); // Mobile phone number
-                            var input = firstDiv.FindElement(By.XPath("./input"));
-                            var forAtr = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
-                            forAtr = forAtr.Replace("single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-" + JobID + "-", "");
 
-                            var singleLine = context.SingleLines
-                                .FirstOrDefault(x => x.Key == forAtr);
-                            if (singleLine is null)
-                            {
-                                singleLine = new SingleLine()
-                                {
-                                    Key = forAtr,
-                                    //SelectedOptionValue = "" // should be setting this
-                                };
-                                context.SingleLines.Add(singleLine);
-                            }
-                            else // update selected value?
-                            {
-
-                            }
-
-                            if (dbRow.JobPostingSingleLines.Any(x => x.Key == forAtr) is false)
-                            {
-                                dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
-                                {
-                                    SingleLine = singleLine,
-                                });
-                                // Make list to track so later we know what to remove?
-                            }
-
-                            context.SaveChanges();
-                        }
-                        else
-                        {
-                            throw new NotImplementedException("Shit!");
                         }
 
+                        if (dbRow.JobPostingSingleLines.Any(x => x.Key == question.Key) is false)
+                        {
+                            dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
+                            {
+                                SingleLine = singleLine,
+                            });
+                        }
+
+                        context.SaveChanges();
                     }
-                    
+
+                    foreach (var question in questions.Combos)
+                    {
+                        var comboBox = context.ComboBoxes
+                            .Include(x => x.SelectedComboBoxOption!.ComboBox)
+                            .Include(x => x.ComboBoxOptions)
+                            .FirstOrDefault(x => x.Key == question.Key);
+                        if (comboBox is null)
+                        {
+                            comboBox = new ComboBox()
+                            {
+                                Key = question.Key,
+                                Label = question.Label,
+                                //SelectedOptionValue = question.Input,
+                                ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
+                                {
+                                    Key = question.Key,
+                                    OptionValue = x
+                                }).ToHashSet(),
+                            };
+                            context.ComboBoxes.Add(comboBox);
+                            context.SaveChanges();
+                            // Possible circular reference requires these to be seperate writes
+                            comboBox.SelectedOptionValue = question.Input;
+                            context.SaveChanges();
+                        }
+                        else // Upsert options?, update selected value
+                        {
+
+                        }
+
+                        if (dbRow.JobPostingComboBoxes.Any(x => x.Key == question.Key) is false)
+                        {
+                            dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
+                            {
+                                ComboBox = comboBox,
+                            });
+                        }
+
+                        context.SaveChanges();
+                    }
+
+                    var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
+                    closeBtn.Click();
+                    await Wait();
+
+                    var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
+                    discard.Click();
+                    await Wait();
+
                     // Do apply here!
                     row.Applied = true;
                     dbRow.Applied = true;

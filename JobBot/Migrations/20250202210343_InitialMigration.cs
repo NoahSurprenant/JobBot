@@ -42,6 +42,7 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
                     SingleLineValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -78,6 +79,7 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
                     SelectedOptionValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
