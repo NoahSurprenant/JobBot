@@ -13,11 +13,21 @@ public class DataContext : DbContext
     }
 
     public DbSet<JobPosting> JobPostings { get; set; }
+    public DbSet<ComboBox> ComboBoxes { get; set; }
+    public DbSet<SingleLine> SingleLines { get; set; }
+    public DbSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
+    public DbSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+    public DbSet<ComboBoxOption> ComboBoxOptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new JobPostingConfiguration());
+        modelBuilder.ApplyConfiguration(new ComboBoxConfiguration());
+        modelBuilder.ApplyConfiguration(new SingleLineConfiguration());
+        modelBuilder.ApplyConfiguration(new JobPostingComboBoxConfiguration());
+        modelBuilder.ApplyConfiguration(new JobPostingSingleLineConfiguration());
+        modelBuilder.ApplyConfiguration(new ComboBoxOptionConfiguration());
     }
 }
 
@@ -34,8 +44,147 @@ public class JobPostingConfiguration : IEntityTypeConfiguration<JobPosting>
     }
 }
 
+public class JobPostingComboBoxConfiguration : IEntityTypeConfiguration<JobPostingComboBox>
+{
+    public void Configure(EntityTypeBuilder<JobPostingComboBox> entity)
+    {
+        entity.ToTable("JobPostingComboBoxes");
+
+        entity.HasKey(e => new { e.JobPostingID, e.Key });
+
+        entity.HasOne(x => x.ComboBox)
+            .WithMany(x => x.JobPostingComboBoxes)
+            .HasForeignKey(x => x.Key);
+
+        entity.HasOne(x => x.JobPosting)
+            .WithMany(x => x.JobPostingComboBoxes)
+            .HasForeignKey(x => x.JobPostingID);
+    }
+}
+
+public class JobPostingSingleLineConfiguration : IEntityTypeConfiguration<JobPostingSingleLine>
+{
+    public void Configure(EntityTypeBuilder<JobPostingSingleLine> entity)
+    {
+        entity.ToTable("JobPostingSingleLines");
+
+        entity.HasKey(e => new { e.JobPostingID, e.Key });
+
+        entity.HasOne(x => x.SingleLine)
+            .WithMany(x => x.JobPostingSingleLines)
+            .HasForeignKey(x => x.Key);
+
+        entity.HasOne(x => x.JobPosting)
+            .WithMany(x => x.JobPostingSingleLines)
+            .HasForeignKey(x => x.JobPostingID);
+    }
+}
+
+public class ComboBoxOptionConfiguration : IEntityTypeConfiguration<ComboBoxOption>
+{
+    public void Configure(EntityTypeBuilder<ComboBoxOption> entity)
+    {
+        entity.ToTable("ComboBoxOptions");
+
+        entity.HasKey(e => new { e.OptionValue, e.Key });
+
+        entity.HasOne(x => x.ComboBox)
+            .WithMany(x => x.ComboBoxOptions)
+            .HasForeignKey(x => x.Key);
+
+        entity.HasOne(x => x.SelectedComboBox)
+            .WithOne(x => x.SelectedComboBoxOption)
+            .HasForeignKey<ComboBox>(x => new { x.SelectedOptionValue, x.Key })
+            .IsRequired(false);
+    }
+}
+
+public class ComboBoxConfiguration : IEntityTypeConfiguration<ComboBox>
+{
+    public void Configure(EntityTypeBuilder<ComboBox> entity)
+    {
+        entity.ToTable("ComboBoxes");
+
+        entity.HasKey(e => e.Key);
+
+        // Value always comes from LinkedIn
+        entity.Property(e => e.Key).ValueGeneratedNever();
+    }
+}
+
+public class SingleLineConfiguration : IEntityTypeConfiguration<SingleLine>
+{
+    public void Configure(EntityTypeBuilder<SingleLine> entity)
+    {
+        entity.ToTable("SingleLines");
+
+        entity.HasKey(e => e.Key);
+
+        // Value always comes from LinkedIn
+        entity.Property(e => e.Key).ValueGeneratedNever();
+    }
+}
+
+// Link table
+public class JobPostingComboBox
+{
+    public long JobPostingID { get; set; }
+    public string Key { get; set; } = null!;
+    public JobPosting JobPosting { get; set; } = null!;
+    public ComboBox ComboBox { get; set; } = null!;
+}
+
+// Link table
+public class JobPostingSingleLine
+{
+    public long JobPostingID { get; set; }
+    public string Key { get; set; } = null!;
+    public JobPosting JobPosting { get; set; } = null!;
+    public SingleLine SingleLine { get; set; } = null!;
+}
+
+public class ComboBox
+{
+    public ComboBox()
+    {
+        JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
+        ComboBoxOptions = new HashSet<ComboBoxOption>();
+    }
+    public string Key { get; set; } = null!;
+    public string? SelectedOptionValue { get; set; }
+    public ComboBoxOption? SelectedComboBoxOption { get; set; }
+    public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
+    public HashSet<ComboBoxOption> ComboBoxOptions { get; set; }
+}
+
+public class ComboBoxOption
+{
+    public string Key { get; set; } = null!;
+    public string OptionValue { get; set; } = null!;
+    public ComboBox ComboBox { get; set; } = null!;
+    public ComboBox? SelectedComboBox { get; set; }
+}
+
+public class SingleLine
+{
+    public SingleLine()
+    {
+        JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
+    }
+    public string Key { get; set; } = null!;
+    public string? SingleLineValue { get; set; } = null!;
+    public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+}
+
 public class JobPosting
 {
+    public JobPosting()
+    {
+        JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
+        JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
+    }
+    public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
+    public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
     public long JobPostingID { get; set; }
     public string CompanyName { get; set; } = null!;
     public string? CompanyLink { get; set; }

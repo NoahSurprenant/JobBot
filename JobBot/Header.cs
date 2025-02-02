@@ -8,7 +8,15 @@ public class Header
     {
         _jobTitleElement.Click();
         var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-        w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
+        //w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
+        w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
+    }
+
+    public void ClickEasyApply(IWebDriver driver)
+    {
+        _applyElement.Click();
+        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"jobs-apply-header\"]"))?.Text == "Apply to " + CompanyName);
     }
 
     public long JobID;
@@ -29,7 +37,12 @@ public class Header
 
     private readonly IWebElement _header;
     private readonly IWebElement _jobTitleElement;
+    private readonly IWebElement _applyElement;
 
+    // Full:
+    //*[@id="main"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/./div[1]/div/div[1]/div
+
+    // ./div[1]/div/div[1]/div
     public Header(IWebElement header, long? jobID = null)
     {
         _header = header;
@@ -99,6 +112,14 @@ public class Header
             }
         }
 
+        try
+        {
+            _applyElement = _header.FindElement(By.XPath("./div[5]/div/div/div/button/span"));
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 
 }

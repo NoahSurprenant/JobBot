@@ -13,14 +13,14 @@ public class Worker : BackgroundService
     private readonly IDbContextFactory<DataContext> _factory;
     private readonly ILogger<Worker> _logger;
     private readonly Random _random = new Random();
-    private readonly string _proxy;
+    //private readonly string _proxy;
     private readonly string _cache;
 
     public Worker(IDbContextFactory<DataContext> factory, ILogger<Worker> logger, IConfiguration configuration)
     {
         _factory = factory;
         _logger = logger;
-        _proxy = configuration.GetValue<string>("Proxy") ?? throw new Exception("Missing proxy");
+        //_proxy = configuration.GetValue<string>("Proxy") ?? throw new Exception("Missing proxy");
         _cache = configuration.GetValue<string>("Cache") ?? throw new Exception("Missing cache location");
     }
 
@@ -35,7 +35,7 @@ public class Worker : BackgroundService
         options.AddExcludedArgument("enable-automation");
         options.AddAdditionalChromeOption("useAutomationExtension", false);
 
-        options.AddArgument($"--proxy-server={_proxy}");
+        //options.AddArgument($"--proxy-server={_proxy}");
 
         using var service = ChromeDriverService.CreateDefaultService();
 
@@ -70,7 +70,7 @@ public class Worker : BackgroundService
 
         await NavigateToJobsPage(driver);
 
-        var job = "developer";
+        var job = ".net developer";
         var location = "Detroit Metropolitan Area";
         var result = await Apply(driver, job, location, 10, 20);
 
@@ -185,6 +185,8 @@ public class Worker : BackgroundService
             var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
             var item = new JobRowWithDetail(row, new(detailContent));
 
+            using var transaction = context.Database.BeginTransaction();
+
             //upsert
             var dbRow = existing?.Update(item) ?? JobPosting.Create(item);
             if (existing is null)
@@ -207,6 +209,142 @@ public class Worker : BackgroundService
                 }
                 else
                 {
+                    item.JobDetailPane.Header.ClickEasyApply(driver);
+                    await Wait(1, 1);
+                    var follow = driver.FindElementOrDefault(By.XPath("//*[@id=\"follow-company-checkbox\"]"));
+                    if (follow is not null)
+                    {
+                        var before = follow.Selected;
+                        if (follow.Selected is true)
+                        {
+                            follow.Click();
+                        }
+                        var after = follow.Selected;
+                    }
+
+                    if (existing is null)
+                    {
+                        // Pull related data
+                        dbRow.JobPostingSingleLines = context
+                            .JobPostingSingleLines
+                            .Include(x => x.SingleLine)
+                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
+                            .ToHashSet();
+
+                        dbRow.JobPostingComboBoxes = context
+                            .JobPostingComboBoxes
+                            .Include(x => x.ComboBox.ComboBoxOptions)
+                            .Include(x => x.ComboBox.SelectedComboBoxOption)
+                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
+                            .ToHashSet();
+                    }
+
+                    var form = driver.FindElement(By.XPath("//form[1]"));
+
+                    var foo = form.FindElements(By.XPath("./div/div/div"));
+
+                    // First is contact div. Rest are div with class like qKaYReXtKxWInYNdGaWKNtCOycgtsjDHelqpS
+                    var yy = foo.Skip(1).ToList();
+
+                    foreach (var y in yy)
+                    {
+                        // inner div has class fb-dash-form-element and jbVwHDGaAjptFLyyeygpxWihBejjeLeVv and each has differetn mt1 etc
+                        // style="width:100%" tabindex="-1" data-test-form-element=""
+                        // second inner div has data-test-text-entity-list-form-component="" OR data-test-single-line-text-form-component="" data-live-test-single-line-text-form-component=""
+                        var inner = y.FindElement(By.XPath("./div/div"));
+
+                        var combo = inner.GetDomAttribute("data-test-text-entity-list-form-component") is not null;
+                        var single = inner.GetDomAttribute("data-test-single-line-text-form-component") is not null && inner.GetDomAttribute("data-live-test-single-line-text-form-component") is not null;
+
+                        if (combo)
+                        {
+                            var label = inner.FindElement(By.XPath("./label"));
+                            var select = inner.FindElement(By.XPath("./select"));
+                            var options = select.FindElements(By.XPath("./option"));
+                            var optionValues = options.Skip(1).Select(x => x.GetDomAttribute("value")).ToArray();
+                            if (optionValues.Any() is false)
+                                throw new Exception("Failed to get options");
+                            var forAtr = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
+                            forAtr = forAtr.Replace("text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-" + JobID + "-", "");
+
+                            var comboBox = context.ComboBoxes
+                                .Include(x => x.SelectedComboBoxOption!.ComboBox)
+                                .Include(x => x.ComboBoxOptions)
+                                .FirstOrDefault(x => x.Key == forAtr);
+                            if (comboBox is null)
+                            {
+                                comboBox = new ComboBox()
+                                {
+                                    Key = forAtr,
+                                    //SelectedOptionValue = "" // should be setting this
+                                    ComboBoxOptions = optionValues.Select(x => new ComboBoxOption()
+                                    {
+                                        Key = forAtr,
+                                        OptionValue = x
+                                    }).ToHashSet(),
+                                };
+                                context.ComboBoxes.Add(comboBox);
+                            }
+                            else // Upsert options?, update selected value
+                            {
+
+                            }
+
+                            if (dbRow.JobPostingComboBoxes.Any(x => x.Key == forAtr) is false)
+                            {
+                                dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
+                                {
+                                    ComboBox = comboBox,
+                                });
+                                // Make list to track so later we know what to remove?
+                            }
+
+                            context.SaveChanges();
+                        }
+                        else if (single)
+                        {
+                            // First div appears to be what we want
+                            // Second appears to be errors
+                            var firstDiv = inner.FindElement(By.XPath("./div[1]/div"));
+                            var label = firstDiv.FindElement(By.XPath("./label")); // Mobile phone number
+                            var input = firstDiv.FindElement(By.XPath("./input"));
+                            var forAtr = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
+                            forAtr = forAtr.Replace("single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-" + JobID + "-", "");
+
+                            var singleLine = context.SingleLines
+                                .FirstOrDefault(x => x.Key == forAtr);
+                            if (singleLine is null)
+                            {
+                                singleLine = new SingleLine()
+                                {
+                                    Key = forAtr,
+                                    //SelectedOptionValue = "" // should be setting this
+                                };
+                                context.SingleLines.Add(singleLine);
+                            }
+                            else // update selected value?
+                            {
+
+                            }
+
+                            if (dbRow.JobPostingSingleLines.Any(x => x.Key == forAtr) is false)
+                            {
+                                dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
+                                {
+                                    SingleLine = singleLine,
+                                });
+                                // Make list to track so later we know what to remove?
+                            }
+
+                            context.SaveChanges();
+                        }
+                        else
+                        {
+                            throw new NotImplementedException("Shit!");
+                        }
+
+                    }
+                    
                     // Do apply here!
                     row.Applied = true;
                     dbRow.Applied = true;
@@ -217,6 +355,7 @@ public class Worker : BackgroundService
 
             
             context.SaveChanges();
+            transaction.Commit();
         }
 
         // Example selecting row and then going to job page
@@ -247,7 +386,8 @@ public class Worker : BackgroundService
 
         var xxx = w.Until(x =>
         {
-            var jobTitleElement = x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
+            //var jobTitleElement = x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
+            var jobTitleElement = x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
             if (jobTitleElement is null)
                 return false;
             var jobID = long.Parse(jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
@@ -285,21 +425,24 @@ public class Worker : BackgroundService
         //*[@id="jobs-search-box-location-id-ember29"]
         var loc = driver.FindElement(By.XPath("//*[starts-with(@id,'jobs-search-box-location-id-ember')]"));
         var valueEntered = loc.GetDomProperty("value");
-        if (valueEntered != location)
-        {
+        // Not sure why this if chain is not working on my actual account but does on my alt
+        // On my main account it keeps reverting to United States for some reason
+        //if (valueEntered != location)
+        //{
             await Wait();
             loc.Click();
             loc.Clear();
             await loc.SendHumanKeys(location);
-            loc.Click();
+            //loc.Click();
             loc.SendKeys(Keys.Enter);
-        }
-        else
-        {
-            // Location was already correct, so just hit enter on title
-            // instead of being weird and hitting enter on location when we are not touching it
-            title.SendKeys(Keys.Enter);
-        }
+        //}
+        //else
+        //{
+        //    // Location was already correct, so just hit enter on title
+        //    // instead of being weird and hitting enter on location when we are not touching it
+        //    title.SendKeys(Keys.Enter);
+        //}
+        await Wait();
         //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[7]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
         //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
         var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div/div[3]/div[4]/section/div/section/div/div/div/ul/li/div/button[text()=\"Easy Apply\"]")));
