@@ -6,6 +6,7 @@ public class Questions
 {
     public List<SingleDto> Singles = new();
     public List<ComboDto> Combos = new();
+    public List<AutoDto> Autos = new();
 
     public Questions(IWebDriver driver, long JobID)
     {
@@ -23,6 +24,7 @@ public class Questions
 
             var combo = inner.GetDomAttribute("data-test-text-entity-list-form-component") is not null;
             var single = inner.GetDomAttribute("data-test-single-line-text-form-component") is not null && inner.GetDomAttribute("data-live-test-single-line-text-form-component") is not null;
+            var auto = inner.GetDomAttribute("data-test-single-typeahead-entity-form-component") is not null;
 
             if (combo)
             {
@@ -32,11 +34,37 @@ public class Questions
             {
                 Singles.Add(new(inner, JobID));
             }
+            else if (auto)
+            {
+                Autos.Add(new(inner, JobID));
+            }
             else
             {
                 throw new NotImplementedException("Shit!");
             }
         }
+    }
+}
+
+public class AutoDto
+{
+    private const string _const = "single-typeahead-entity-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
+    //private readonly long jobID;
+    public string ForAttribute { get; private set; }
+    public string Key { get; private set; }
+    public string Label { get; private set; }
+    public string? Input { get; private set; }
+
+    public AutoDto(IWebElement inner, long jobID)
+    {
+        var label = inner.FindElement(By.XPath("./label"));
+        Label = label.FindElement(By.XPath("./span[2]")).Text;
+        var input = inner.FindElement(By.XPath("./div[1]/input"));
+        Input = input.GetAttribute("value");
+        if (Input == string.Empty)
+            Input = null;
+        ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
+        Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
 }
 
@@ -59,6 +87,8 @@ public class SingleDto
         Label = label.Text;
         var input = firstDiv.FindElement(By.XPath("./input"));
         Input = input.GetAttribute("value");
+        if (Input == string.Empty)
+            Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
         Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
@@ -84,6 +114,8 @@ public class ComboDto
         if (selectObj.IsMultiple)
             throw new NotImplementedException("Currently not supporting multiple selections!");
         Input = selectObj.SelectedOption.Text;
+        if (Input == string.Empty)
+            Input = null;
         var options = select.FindElements(By.XPath("./option"));
         Options = options.Skip(1).Select(x => x.GetDomAttribute("value")).ToArray();
         if (Options.Any() is false)

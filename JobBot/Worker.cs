@@ -75,7 +75,7 @@ public class Worker : BackgroundService
         {
             var job = ".net developer";
             var location = "Detroit Metropolitan Area";
-            var result = await Apply(driver, job, location, 10, 20);
+            var result = await Apply(driver, job, location, 100, 250);
         }
         catch (Exception ex)
         {
@@ -250,16 +250,25 @@ public class Worker : BackgroundService
                             .Include(x => x.ComboBox.SelectedComboBoxOption)
                             .Where(x => x.JobPostingID == dbRow.JobPostingID)
                             .ToHashSet();
+
+                        dbRow.JobPostingAutoLines = context
+                            .JobPostingAutoLines
+                            .Include(x => x.AutoLine)
+                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
+                            .ToHashSet();
                     }
 
                     var questions = new Questions(driver, JobID);
 
                     var toRemove1 = dbRow.JobPostingSingleLines.ExceptBy(questions.Singles.Select(x => x.Key), x => x.Key);
                     var toRemove2 = dbRow.JobPostingComboBoxes.ExceptBy(questions.Combos.Select(x => x.Key), x => x.Key);
-                    foreach(var o in toRemove1)
+                    var toRemove3 = dbRow.JobPostingAutoLines.ExceptBy(questions.Autos.Select(x => x.Key), x => x.Key);
+                    foreach (var o in toRemove1)
                         dbRow.JobPostingSingleLines.Remove(o);
                     foreach (var o in toRemove2)
                         dbRow.JobPostingComboBoxes.Remove(o);
+                    foreach (var o in toRemove3)
+                        dbRow.JobPostingAutoLines.Remove(o);
 
                     foreach (var question in questions.Singles)
                     {
@@ -326,6 +335,36 @@ public class Worker : BackgroundService
                             dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
                             {
                                 ComboBox = comboBox,
+                            });
+                        }
+
+                        context.SaveChanges();
+                    }
+
+                    foreach (var question in questions.Autos)
+                    {
+                        var auto = context.AutoLines
+                            .FirstOrDefault(x => x.Key == question.Key);
+                        if (auto is null)
+                        {
+                            auto = new AutoLine()
+                            {
+                                Key = question.Key,
+                                Label = question.Label,
+                                AutoLineValue = question.Input,
+                            };
+                            context.AutoLines.Add(auto);
+                        }
+                        else // update selected value?
+                        {
+
+                        }
+
+                        if (dbRow.JobPostingAutoLines.Any(x => x.Key == question.Key) is false)
+                        {
+                            dbRow.JobPostingAutoLines.Add(new JobPostingAutoLine()
+                            {
+                                AutoLine = auto,
                             });
                         }
 

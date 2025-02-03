@@ -17,6 +17,23 @@ namespace JobBot.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.1");
 
+            modelBuilder.Entity("JobBot.Database.AutoLine", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AutoLineValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("AutoLines", (string)null);
+                });
+
             modelBuilder.Entity("JobBot.Database.ComboBox", b =>
                 {
                     b.Property<string>("Key")
@@ -110,6 +127,21 @@ namespace JobBot.Migrations
                     b.ToTable("JobPostings", (string)null);
                 });
 
+            modelBuilder.Entity("JobBot.Database.JobPostingAutoLine", b =>
+                {
+                    b.Property<long>("JobPostingID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("JobPostingID", "Key");
+
+                    b.HasIndex("Key");
+
+                    b.ToTable("JobPostingAutoLines", (string)null);
+                });
+
             modelBuilder.Entity("JobBot.Database.JobPostingComboBox", b =>
                 {
                     b.Property<long>("JobPostingID")
@@ -177,6 +209,25 @@ namespace JobBot.Migrations
                     b.Navigation("ComboBox");
                 });
 
+            modelBuilder.Entity("JobBot.Database.JobPostingAutoLine", b =>
+                {
+                    b.HasOne("JobBot.Database.JobPosting", "JobPosting")
+                        .WithMany("JobPostingAutoLines")
+                        .HasForeignKey("JobPostingID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JobBot.Database.AutoLine", "AutoLine")
+                        .WithMany("JobPostingAutoLines")
+                        .HasForeignKey("Key")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AutoLine");
+
+                    b.Navigation("JobPosting");
+                });
+
             modelBuilder.Entity("JobBot.Database.JobPostingComboBox", b =>
                 {
                     b.HasOne("JobBot.Database.JobPosting", "JobPosting")
@@ -215,6 +266,11 @@ namespace JobBot.Migrations
                     b.Navigation("SingleLine");
                 });
 
+            modelBuilder.Entity("JobBot.Database.AutoLine", b =>
+                {
+                    b.Navigation("JobPostingAutoLines");
+                });
+
             modelBuilder.Entity("JobBot.Database.ComboBox", b =>
                 {
                     b.Navigation("ComboBoxOptions");
@@ -229,6 +285,8 @@ namespace JobBot.Migrations
 
             modelBuilder.Entity("JobBot.Database.JobPosting", b =>
                 {
+                    b.Navigation("JobPostingAutoLines");
+
                     b.Navigation("JobPostingComboBoxes");
 
                     b.Navigation("JobPostingSingleLines");

@@ -15,8 +15,10 @@ public class DataContext : DbContext
     public DbSet<JobPosting> JobPostings { get; set; }
     public DbSet<ComboBox> ComboBoxes { get; set; }
     public DbSet<SingleLine> SingleLines { get; set; }
+    public DbSet<AutoLine> AutoLines { get; set; }
     public DbSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
     public DbSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+    public DbSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
     public DbSet<ComboBoxOption> ComboBoxOptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -25,8 +27,10 @@ public class DataContext : DbContext
         modelBuilder.ApplyConfiguration(new JobPostingConfiguration());
         modelBuilder.ApplyConfiguration(new ComboBoxConfiguration());
         modelBuilder.ApplyConfiguration(new SingleLineConfiguration());
+        modelBuilder.ApplyConfiguration(new AutoLineConfiguration());
         modelBuilder.ApplyConfiguration(new JobPostingComboBoxConfiguration());
         modelBuilder.ApplyConfiguration(new JobPostingSingleLineConfiguration());
+        modelBuilder.ApplyConfiguration(new JobPostingAutoLineConfiguration());
         modelBuilder.ApplyConfiguration(new ComboBoxOptionConfiguration());
     }
 }
@@ -80,6 +84,24 @@ public class JobPostingSingleLineConfiguration : IEntityTypeConfiguration<JobPos
     }
 }
 
+public class JobPostingAutoLineConfiguration : IEntityTypeConfiguration<JobPostingAutoLine>
+{
+    public void Configure(EntityTypeBuilder<JobPostingAutoLine> entity)
+    {
+        entity.ToTable("JobPostingAutoLines");
+
+        entity.HasKey(e => new { e.JobPostingID, e.Key });
+
+        entity.HasOne(x => x.AutoLine)
+            .WithMany(x => x.JobPostingAutoLines)
+            .HasForeignKey(x => x.Key);
+
+        entity.HasOne(x => x.JobPosting)
+            .WithMany(x => x.JobPostingAutoLines)
+            .HasForeignKey(x => x.JobPostingID);
+    }
+}
+
 public class ComboBoxOptionConfiguration : IEntityTypeConfiguration<ComboBoxOption>
 {
     public void Configure(EntityTypeBuilder<ComboBoxOption> entity)
@@ -125,6 +147,19 @@ public class SingleLineConfiguration : IEntityTypeConfiguration<SingleLine>
     }
 }
 
+public class AutoLineConfiguration : IEntityTypeConfiguration<AutoLine>
+{
+    public void Configure(EntityTypeBuilder<AutoLine> entity)
+    {
+        entity.ToTable("AutoLines");
+
+        entity.HasKey(e => e.Key);
+
+        // Value always comes from LinkedIn
+        entity.Property(e => e.Key).ValueGeneratedNever();
+    }
+}
+
 // Link table
 public class JobPostingComboBox
 {
@@ -141,6 +176,15 @@ public class JobPostingSingleLine
     public string Key { get; set; } = null!;
     public JobPosting JobPosting { get; set; } = null!;
     public SingleLine SingleLine { get; set; } = null!;
+}
+
+// Link table
+public class JobPostingAutoLine
+{
+    public long JobPostingID { get; set; }
+    public string Key { get; set; } = null!;
+    public JobPosting JobPosting { get; set; } = null!;
+    public AutoLine AutoLine { get; set; } = null!;
 }
 
 public class ComboBox
@@ -178,15 +222,29 @@ public class SingleLine
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
 }
 
+public class AutoLine
+{
+    public AutoLine()
+    {
+        JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
+    }
+    public string Key { get; set; } = null!;
+    public string Label { get; set; } = null!;
+    public string? AutoLineValue { get; set; } = null!;
+    public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
+}
+
 public class JobPosting
 {
     public JobPosting()
     {
         JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
         JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
+        JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
     }
     public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+    public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
     public long JobPostingID { get; set; }
     public string CompanyName { get; set; } = null!;
     public string? CompanyLink { get; set; }

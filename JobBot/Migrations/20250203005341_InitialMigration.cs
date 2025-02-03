@@ -12,6 +12,19 @@ namespace JobBot.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AutoLines",
+                columns: table => new
+                {
+                    Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
+                    AutoLineValue = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AutoLines", x => x.Key);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "JobPostings",
                 columns: table => new
                 {
@@ -48,6 +61,30 @@ namespace JobBot.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SingleLines", x => x.Key);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "JobPostingAutoLines",
+                columns: table => new
+                {
+                    JobPostingID = table.Column<long>(type: "INTEGER", nullable: false),
+                    Key = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_JobPostingAutoLines", x => new { x.JobPostingID, x.Key });
+                    table.ForeignKey(
+                        name: "FK_JobPostingAutoLines_AutoLines_Key",
+                        column: x => x.Key,
+                        principalTable: "AutoLines",
+                        principalColumn: "Key",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_JobPostingAutoLines_JobPostings_JobPostingID",
+                        column: x => x.JobPostingID,
+                        principalTable: "JobPostings",
+                        principalColumn: "JobPostingID",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -141,6 +178,11 @@ namespace JobBot.Migrations
                 column: "Key");
 
             migrationBuilder.CreateIndex(
+                name: "IX_JobPostingAutoLines_Key",
+                table: "JobPostingAutoLines",
+                column: "Key");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_JobPostingComboBoxes_Key",
                 table: "JobPostingComboBoxes",
                 column: "Key");
@@ -166,10 +208,16 @@ namespace JobBot.Migrations
                 table: "ComboBoxes");
 
             migrationBuilder.DropTable(
+                name: "JobPostingAutoLines");
+
+            migrationBuilder.DropTable(
                 name: "JobPostingComboBoxes");
 
             migrationBuilder.DropTable(
                 name: "JobPostingSingleLines");
+
+            migrationBuilder.DropTable(
+                name: "AutoLines");
 
             migrationBuilder.DropTable(
                 name: "JobPostings");
