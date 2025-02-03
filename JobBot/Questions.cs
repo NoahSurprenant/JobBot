@@ -48,10 +48,10 @@ public class Questions
 
 public class AutoDto
 {
-    private const string _const = "single-typeahead-entity-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
+    //private const string _const = "single-typeahead-entity-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
     public string ForAttribute { get; private set; }
-    public string Key { get; private set; }
+    //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
 
@@ -64,16 +64,16 @@ public class AutoDto
         if (Input == string.Empty)
             Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
-        Key = ForAttribute.Replace(_const + jobID + "-", "");
+        //Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
 }
 
 public class SingleDto
 {
-    private const string _const = "single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
+    //private const string _const = "single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
     public string ForAttribute { get; private set; }
-    public string Key { get; private set; }
+    //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
 
@@ -90,16 +90,16 @@ public class SingleDto
         if (Input == string.Empty)
             Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
-        Key = ForAttribute.Replace(_const + jobID + "-", "");
+        //Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
 }
 
 public class ComboDto
 {
-    private const string _const = "text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
+    //private const string _const = "text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
     public string ForAttribute { get; private set; }
-    public string Key { get; private set; }
+    //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
     public string[] Options { get; private set; }
@@ -121,6 +121,6 @@ public class ComboDto
         if (Options.Any() is false)
             throw new Exception("Failed to get options");
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
-        Key = ForAttribute.Replace(_const + jobID + "-", "");
+        //Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
 }

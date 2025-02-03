@@ -15,13 +15,12 @@ namespace JobBot.Migrations
                 name: "AutoLines",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
                     Label = table.Column<string>(type: "TEXT", nullable: false),
                     AutoLineValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AutoLines", x => x.Key);
+                    table.PrimaryKey("PK_AutoLines", x => x.Label);
                 });
 
             migrationBuilder.CreateTable(
@@ -54,13 +53,12 @@ namespace JobBot.Migrations
                 name: "SingleLines",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
                     Label = table.Column<string>(type: "TEXT", nullable: false),
                     SingleLineValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SingleLines", x => x.Key);
+                    table.PrimaryKey("PK_SingleLines", x => x.Label);
                 });
 
             migrationBuilder.CreateTable(
@@ -68,16 +66,16 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     JobPostingID = table.Column<long>(type: "INTEGER", nullable: false),
-                    Key = table.Column<string>(type: "TEXT", nullable: false)
+                    Label = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JobPostingAutoLines", x => new { x.JobPostingID, x.Key });
+                    table.PrimaryKey("PK_JobPostingAutoLines", x => new { x.JobPostingID, x.Label });
                     table.ForeignKey(
-                        name: "FK_JobPostingAutoLines_AutoLines_Key",
-                        column: x => x.Key,
+                        name: "FK_JobPostingAutoLines_AutoLines_Label",
+                        column: x => x.Label,
                         principalTable: "AutoLines",
-                        principalColumn: "Key",
+                        principalColumn: "Label",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_JobPostingAutoLines_JobPostings_JobPostingID",
@@ -92,11 +90,11 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     JobPostingID = table.Column<long>(type: "INTEGER", nullable: false),
-                    Key = table.Column<string>(type: "TEXT", nullable: false)
+                    Label = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JobPostingSingleLines", x => new { x.JobPostingID, x.Key });
+                    table.PrimaryKey("PK_JobPostingSingleLines", x => new { x.JobPostingID, x.Label });
                     table.ForeignKey(
                         name: "FK_JobPostingSingleLines_JobPostings_JobPostingID",
                         column: x => x.JobPostingID,
@@ -104,10 +102,10 @@ namespace JobBot.Migrations
                         principalColumn: "JobPostingID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_JobPostingSingleLines_SingleLines_Key",
-                        column: x => x.Key,
+                        name: "FK_JobPostingSingleLines_SingleLines_Label",
+                        column: x => x.Label,
                         principalTable: "SingleLines",
-                        principalColumn: "Key",
+                        principalColumn: "Label",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -115,30 +113,29 @@ namespace JobBot.Migrations
                 name: "ComboBoxes",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
                     Label = table.Column<string>(type: "TEXT", nullable: false),
                     SelectedOptionValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ComboBoxes", x => x.Key);
+                    table.PrimaryKey("PK_ComboBoxes", x => x.Label);
                 });
 
             migrationBuilder.CreateTable(
                 name: "ComboBoxOptions",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
                     OptionValue = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ComboBoxOptions", x => new { x.OptionValue, x.Key });
+                    table.PrimaryKey("PK_ComboBoxOptions", x => new { x.OptionValue, x.Label });
                     table.ForeignKey(
-                        name: "FK_ComboBoxOptions_ComboBoxes_Key",
-                        column: x => x.Key,
+                        name: "FK_ComboBoxOptions_ComboBoxes_Label",
+                        column: x => x.Label,
                         principalTable: "ComboBoxes",
-                        principalColumn: "Key",
+                        principalColumn: "Label",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -147,16 +144,16 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     JobPostingID = table.Column<long>(type: "INTEGER", nullable: false),
-                    Key = table.Column<string>(type: "TEXT", nullable: false)
+                    Label = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JobPostingComboBoxes", x => new { x.JobPostingID, x.Key });
+                    table.PrimaryKey("PK_JobPostingComboBoxes", x => new { x.JobPostingID, x.Label });
                     table.ForeignKey(
-                        name: "FK_JobPostingComboBoxes_ComboBoxes_Key",
-                        column: x => x.Key,
+                        name: "FK_JobPostingComboBoxes_ComboBoxes_Label",
+                        column: x => x.Label,
                         principalTable: "ComboBoxes",
-                        principalColumn: "Key",
+                        principalColumn: "Label",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_JobPostingComboBoxes_JobPostings_JobPostingID",
@@ -167,44 +164,44 @@ namespace JobBot.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ComboBoxes_SelectedOptionValue_Key",
+                name: "IX_ComboBoxes_SelectedOptionValue_Label",
                 table: "ComboBoxes",
-                columns: new[] { "SelectedOptionValue", "Key" },
+                columns: new[] { "SelectedOptionValue", "Label" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ComboBoxOptions_Key",
+                name: "IX_ComboBoxOptions_Label",
                 table: "ComboBoxOptions",
-                column: "Key");
+                column: "Label");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JobPostingAutoLines_Key",
+                name: "IX_JobPostingAutoLines_Label",
                 table: "JobPostingAutoLines",
-                column: "Key");
+                column: "Label");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JobPostingComboBoxes_Key",
+                name: "IX_JobPostingComboBoxes_Label",
                 table: "JobPostingComboBoxes",
-                column: "Key");
+                column: "Label");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JobPostingSingleLines_Key",
+                name: "IX_JobPostingSingleLines_Label",
                 table: "JobPostingSingleLines",
-                column: "Key");
+                column: "Label");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Key",
+                name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Label",
                 table: "ComboBoxes",
-                columns: new[] { "SelectedOptionValue", "Key" },
+                columns: new[] { "SelectedOptionValue", "Label" },
                 principalTable: "ComboBoxOptions",
-                principalColumns: new[] { "OptionValue", "Key" });
+                principalColumns: new[] { "OptionValue", "Label" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Key",
+                name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Label",
                 table: "ComboBoxes");
 
             migrationBuilder.DropTable(

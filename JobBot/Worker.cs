@@ -260,9 +260,9 @@ public class Worker : BackgroundService
 
                     var questions = new Questions(driver, JobID);
 
-                    var toRemove1 = dbRow.JobPostingSingleLines.ExceptBy(questions.Singles.Select(x => x.Key), x => x.Key);
-                    var toRemove2 = dbRow.JobPostingComboBoxes.ExceptBy(questions.Combos.Select(x => x.Key), x => x.Key);
-                    var toRemove3 = dbRow.JobPostingAutoLines.ExceptBy(questions.Autos.Select(x => x.Key), x => x.Key);
+                    var toRemove1 = dbRow.JobPostingSingleLines.ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
+                    var toRemove2 = dbRow.JobPostingComboBoxes.ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
+                    var toRemove3 = dbRow.JobPostingAutoLines.ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
                     foreach (var o in toRemove1)
                         dbRow.JobPostingSingleLines.Remove(o);
                     foreach (var o in toRemove2)
@@ -273,12 +273,11 @@ public class Worker : BackgroundService
                     foreach (var question in questions.Singles)
                     {
                         var singleLine = context.SingleLines
-                            .FirstOrDefault(x => x.Key == question.Key);
+                            .FirstOrDefault(x => x.Label == question.Label);
                         if (singleLine is null)
                         {
                             singleLine = new SingleLine()
                             {
-                                Key = question.Key,
                                 Label = question.Label,
                                 SingleLineValue = question.Input,
                             };
@@ -289,7 +288,7 @@ public class Worker : BackgroundService
 
                         }
 
-                        if (dbRow.JobPostingSingleLines.Any(x => x.Key == question.Key) is false)
+                        if (dbRow.JobPostingSingleLines.Any(x => x.Label == question.Label) is false)
                         {
                             dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
                             {
@@ -305,17 +304,16 @@ public class Worker : BackgroundService
                         var comboBox = context.ComboBoxes
                             .Include(x => x.SelectedComboBoxOption!.ComboBox)
                             .Include(x => x.ComboBoxOptions)
-                            .FirstOrDefault(x => x.Key == question.Key);
+                            .FirstOrDefault(x => x.Label == question.Label);
                         if (comboBox is null)
                         {
                             comboBox = new ComboBox()
                             {
-                                Key = question.Key,
                                 Label = question.Label,
                                 //SelectedOptionValue = question.Input,
                                 ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
                                 {
-                                    Key = question.Key,
+                                    Label = question.Label,
                                     OptionValue = x
                                 }).ToHashSet(),
                             };
@@ -330,7 +328,7 @@ public class Worker : BackgroundService
 
                         }
 
-                        if (dbRow.JobPostingComboBoxes.Any(x => x.Key == question.Key) is false)
+                        if (dbRow.JobPostingComboBoxes.Any(x => x.Label == question.Label) is false)
                         {
                             dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
                             {
@@ -344,12 +342,11 @@ public class Worker : BackgroundService
                     foreach (var question in questions.Autos)
                     {
                         var auto = context.AutoLines
-                            .FirstOrDefault(x => x.Key == question.Key);
+                            .FirstOrDefault(x => x.Label == question.Label);
                         if (auto is null)
                         {
                             auto = new AutoLine()
                             {
-                                Key = question.Key,
                                 Label = question.Label,
                                 AutoLineValue = question.Input,
                             };
@@ -360,7 +357,7 @@ public class Worker : BackgroundService
 
                         }
 
-                        if (dbRow.JobPostingAutoLines.Any(x => x.Key == question.Key) is false)
+                        if (dbRow.JobPostingAutoLines.Any(x => x.Label == question.Label) is false)
                         {
                             dbRow.JobPostingAutoLines.Add(new JobPostingAutoLine()
                             {

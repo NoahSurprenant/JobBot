@@ -19,36 +19,28 @@ namespace JobBot.Migrations
 
             modelBuilder.Entity("JobBot.Database.AutoLine", b =>
                 {
-                    b.Property<string>("Key")
+                    b.Property<string>("Label")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AutoLineValue")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Key");
+                    b.HasKey("Label");
 
                     b.ToTable("AutoLines", (string)null);
                 });
 
             modelBuilder.Entity("JobBot.Database.ComboBox", b =>
                 {
-                    b.Property<string>("Key")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Label")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SelectedOptionValue")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Key");
+                    b.HasKey("Label");
 
-                    b.HasIndex("SelectedOptionValue", "Key")
+                    b.HasIndex("SelectedOptionValue", "Label")
                         .IsUnique();
 
                     b.ToTable("ComboBoxes", (string)null);
@@ -59,12 +51,12 @@ namespace JobBot.Migrations
                     b.Property<string>("OptionValue")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("Label")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("OptionValue", "Key");
+                    b.HasKey("OptionValue", "Label");
 
-                    b.HasIndex("Key");
+                    b.HasIndex("Label");
 
                     b.ToTable("ComboBoxOptions", (string)null);
                 });
@@ -132,12 +124,12 @@ namespace JobBot.Migrations
                     b.Property<long>("JobPostingID")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("Label")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("JobPostingID", "Key");
+                    b.HasKey("JobPostingID", "Label");
 
-                    b.HasIndex("Key");
+                    b.HasIndex("Label");
 
                     b.ToTable("JobPostingAutoLines", (string)null);
                 });
@@ -147,12 +139,12 @@ namespace JobBot.Migrations
                     b.Property<long>("JobPostingID")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("Label")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("JobPostingID", "Key");
+                    b.HasKey("JobPostingID", "Label");
 
-                    b.HasIndex("Key");
+                    b.HasIndex("Label");
 
                     b.ToTable("JobPostingComboBoxes", (string)null);
                 });
@@ -162,29 +154,25 @@ namespace JobBot.Migrations
                     b.Property<long>("JobPostingID")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("Label")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("JobPostingID", "Key");
+                    b.HasKey("JobPostingID", "Label");
 
-                    b.HasIndex("Key");
+                    b.HasIndex("Label");
 
                     b.ToTable("JobPostingSingleLines", (string)null);
                 });
 
             modelBuilder.Entity("JobBot.Database.SingleLine", b =>
                 {
-                    b.Property<string>("Key")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Label")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SingleLineValue")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Key");
+                    b.HasKey("Label");
 
                     b.ToTable("SingleLines", (string)null);
                 });
@@ -193,7 +181,7 @@ namespace JobBot.Migrations
                 {
                     b.HasOne("JobBot.Database.ComboBoxOption", "SelectedComboBoxOption")
                         .WithOne("SelectedComboBox")
-                        .HasForeignKey("JobBot.Database.ComboBox", "SelectedOptionValue", "Key");
+                        .HasForeignKey("JobBot.Database.ComboBox", "SelectedOptionValue", "Label");
 
                     b.Navigation("SelectedComboBoxOption");
                 });
@@ -202,7 +190,7 @@ namespace JobBot.Migrations
                 {
                     b.HasOne("JobBot.Database.ComboBox", "ComboBox")
                         .WithMany("ComboBoxOptions")
-                        .HasForeignKey("Key")
+                        .HasForeignKey("Label")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -219,7 +207,7 @@ namespace JobBot.Migrations
 
                     b.HasOne("JobBot.Database.AutoLine", "AutoLine")
                         .WithMany("JobPostingAutoLines")
-                        .HasForeignKey("Key")
+                        .HasForeignKey("Label")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -238,7 +226,7 @@ namespace JobBot.Migrations
 
                     b.HasOne("JobBot.Database.ComboBox", "ComboBox")
                         .WithMany("JobPostingComboBoxes")
-                        .HasForeignKey("Key")
+                        .HasForeignKey("Label")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -257,7 +245,7 @@ namespace JobBot.Migrations
 
                     b.HasOne("JobBot.Database.SingleLine", "SingleLine")
                         .WithMany("JobPostingSingleLines")
-                        .HasForeignKey("Key")
+                        .HasForeignKey("Label")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

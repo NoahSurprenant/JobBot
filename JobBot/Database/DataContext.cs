@@ -54,11 +54,11 @@ public class JobPostingComboBoxConfiguration : IEntityTypeConfiguration<JobPosti
     {
         entity.ToTable("JobPostingComboBoxes");
 
-        entity.HasKey(e => new { e.JobPostingID, e.Key });
+        entity.HasKey(e => new { e.JobPostingID, e.Label });
 
         entity.HasOne(x => x.ComboBox)
             .WithMany(x => x.JobPostingComboBoxes)
-            .HasForeignKey(x => x.Key);
+            .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.JobPosting)
             .WithMany(x => x.JobPostingComboBoxes)
@@ -72,11 +72,11 @@ public class JobPostingSingleLineConfiguration : IEntityTypeConfiguration<JobPos
     {
         entity.ToTable("JobPostingSingleLines");
 
-        entity.HasKey(e => new { e.JobPostingID, e.Key });
+        entity.HasKey(e => new { e.JobPostingID, e.Label });
 
         entity.HasOne(x => x.SingleLine)
             .WithMany(x => x.JobPostingSingleLines)
-            .HasForeignKey(x => x.Key);
+            .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.JobPosting)
             .WithMany(x => x.JobPostingSingleLines)
@@ -90,11 +90,11 @@ public class JobPostingAutoLineConfiguration : IEntityTypeConfiguration<JobPosti
     {
         entity.ToTable("JobPostingAutoLines");
 
-        entity.HasKey(e => new { e.JobPostingID, e.Key });
+        entity.HasKey(e => new { e.JobPostingID, e.Label });
 
         entity.HasOne(x => x.AutoLine)
             .WithMany(x => x.JobPostingAutoLines)
-            .HasForeignKey(x => x.Key);
+            .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.JobPosting)
             .WithMany(x => x.JobPostingAutoLines)
@@ -108,15 +108,15 @@ public class ComboBoxOptionConfiguration : IEntityTypeConfiguration<ComboBoxOpti
     {
         entity.ToTable("ComboBoxOptions");
 
-        entity.HasKey(e => new { e.OptionValue, e.Key });
+        entity.HasKey(e => new { e.OptionValue, e.Label });
 
         entity.HasOne(x => x.ComboBox)
             .WithMany(x => x.ComboBoxOptions)
-            .HasForeignKey(x => x.Key);
+            .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.SelectedComboBox)
             .WithOne(x => x.SelectedComboBoxOption)
-            .HasForeignKey<ComboBox>(x => new { x.SelectedOptionValue, x.Key })
+            .HasForeignKey<ComboBox>(x => new { x.SelectedOptionValue, x.Label })
             .IsRequired(false);
     }
 }
@@ -127,10 +127,10 @@ public class ComboBoxConfiguration : IEntityTypeConfiguration<ComboBox>
     {
         entity.ToTable("ComboBoxes");
 
-        entity.HasKey(e => e.Key);
+        entity.HasKey(e => e.Label);
 
         // Value always comes from LinkedIn
-        entity.Property(e => e.Key).ValueGeneratedNever();
+        entity.Property(e => e.Label).ValueGeneratedNever();
     }
 }
 
@@ -140,10 +140,10 @@ public class SingleLineConfiguration : IEntityTypeConfiguration<SingleLine>
     {
         entity.ToTable("SingleLines");
 
-        entity.HasKey(e => e.Key);
+        entity.HasKey(e => e.Label);
 
         // Value always comes from LinkedIn
-        entity.Property(e => e.Key).ValueGeneratedNever();
+        entity.Property(e => e.Label).ValueGeneratedNever();
     }
 }
 
@@ -153,10 +153,10 @@ public class AutoLineConfiguration : IEntityTypeConfiguration<AutoLine>
     {
         entity.ToTable("AutoLines");
 
-        entity.HasKey(e => e.Key);
+        entity.HasKey(e => e.Label);
 
         // Value always comes from LinkedIn
-        entity.Property(e => e.Key).ValueGeneratedNever();
+        entity.Property(e => e.Label).ValueGeneratedNever();
     }
 }
 
@@ -164,7 +164,7 @@ public class AutoLineConfiguration : IEntityTypeConfiguration<AutoLine>
 public class JobPostingComboBox
 {
     public long JobPostingID { get; set; }
-    public string Key { get; set; } = null!;
+    public string Label { get; set; } = null!;
     public JobPosting JobPosting { get; set; } = null!;
     public ComboBox ComboBox { get; set; } = null!;
 }
@@ -173,7 +173,7 @@ public class JobPostingComboBox
 public class JobPostingSingleLine
 {
     public long JobPostingID { get; set; }
-    public string Key { get; set; } = null!;
+    public string Label { get; set; } = null!;
     public JobPosting JobPosting { get; set; } = null!;
     public SingleLine SingleLine { get; set; } = null!;
 }
@@ -182,7 +182,7 @@ public class JobPostingSingleLine
 public class JobPostingAutoLine
 {
     public long JobPostingID { get; set; }
-    public string Key { get; set; } = null!;
+    public string Label { get; set; } = null!;
     public JobPosting JobPosting { get; set; } = null!;
     public AutoLine AutoLine { get; set; } = null!;
 }
@@ -194,7 +194,6 @@ public class ComboBox
         JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
         ComboBoxOptions = new HashSet<ComboBoxOption>();
     }
-    public string Key { get; set; } = null!;
     public string Label { get; set; } = null!;
     public string? SelectedOptionValue { get; set; }
     public ComboBoxOption? SelectedComboBoxOption { get; set; }
@@ -204,7 +203,7 @@ public class ComboBox
 
 public class ComboBoxOption
 {
-    public string Key { get; set; } = null!;
+    public string Label { get; set; } = null!;
     public string OptionValue { get; set; } = null!;
     public ComboBox ComboBox { get; set; } = null!;
     public ComboBox? SelectedComboBox { get; set; }
@@ -216,7 +215,6 @@ public class SingleLine
     {
         JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
     }
-    public string Key { get; set; } = null!;
     public string Label { get; set; } = null!;
     public string? SingleLineValue { get; set; } = null!;
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
@@ -228,7 +226,6 @@ public class AutoLine
     {
         JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
     }
-    public string Key { get; set; } = null!;
     public string Label { get; set; } = null!;
     public string? AutoLineValue { get; set; } = null!;
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
