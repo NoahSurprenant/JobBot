@@ -4,6 +4,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 
 namespace JobBot;
@@ -70,9 +71,16 @@ public class Worker : BackgroundService
 
         await NavigateToJobsPage(driver);
 
-        var job = ".net developer";
-        var location = "Detroit Metropolitan Area";
-        var result = await Apply(driver, job, location, 10, 20);
+        try
+        {
+            var job = ".net developer";
+            var location = "Detroit Metropolitan Area";
+            var result = await Apply(driver, job, location, 10, 20);
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
 
         driver.Quit();
     }
@@ -178,7 +186,7 @@ public class Worker : BackgroundService
 
             var row = new JobRow(x);
 
-            LoadDetailPane(driver, x, row.JobID);
+            await LoadDetailPane(driver, x, row.JobID);
 
             
 
@@ -366,7 +374,7 @@ public class Worker : BackgroundService
     /// <param name="driver"></param>
     /// <param name="x"></param>
     /// <param name="JobID"></param>
-    private static void LoadDetailPane(IWebDriver driver, IWebElement x, long JobID)
+    private static async Task LoadDetailPane(IWebDriver driver, IWebElement x, long JobID)
     {
         var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
         x.Click();
@@ -380,6 +388,7 @@ public class Worker : BackgroundService
             var jobID = long.Parse(jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
             return jobID == JobID;
         });
+        await Task.Delay(2000);
     }
 
     //https://devhints.io/xpath
@@ -464,6 +473,27 @@ public static class WebElementExt
             element.SendKeys(t.ToString());
             await Task.Delay(TimeSpan.FromMilliseconds(_random.Next(20, 150)));
         }
+    }
+
+    //public static ReadOnlyCollection<IWebElement> FindElementsAsWrapped(this IWebElement element, By by)
+    //{
+    //    var result = element.FindElements(by);
+    //    return result.Select(x => new ElementWrapper())
+    //    return new ElementWrapper(() => element.FindElements(by));
+    //}
+
+    public static IWebElement FindElementAsWrapper(this IWebElement element, By by)
+    {
+        return new ElementWrapper(() => element.FindElement(by));
+    }
+
+    public static IWebElement? FindElementOrDefaultAsWrapper(this IWebElement element, By by)
+    {
+        var wrapped = new NullableElementWrapper(() => element.FindElementOrDefault(by));
+        if (wrapped.IsNull)
+            return null;
+        else
+            return wrapped;
     }
 
     public static IWebElement? FindElementOrDefault(this IWebElement element, By by)

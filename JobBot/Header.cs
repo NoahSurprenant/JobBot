@@ -52,10 +52,10 @@ public class Header
     public Header(IWebElement header, long? jobID = null)
     {
         _header = header;
-        var companyLink = _header.FindElementOrDefault(By.XPath("./div[1]/div[1]/div/a")); // Sometime there will be no link
-        CompanyName = companyLink?.Text ?? _header.FindElement(By.XPath("./div[1]/div[1]/div")).Text;
+        var companyLink = _header.FindElementOrDefaultAsWrapper(By.XPath("./div[1]/div[1]/div/a")); // Sometime there will be no link
+        CompanyName = companyLink?.Text ?? _header.FindElementAsWrapper(By.XPath("./div[1]/div[1]/div")).Text;
         CompanyLink = companyLink?.GetDomAttribute("href").Replace("https://www.linkedin.com/company/", "");
-        _jobTitleElement = _header.FindElementOrDefault(By.XPath("./div[2]/div/h1/a")) ?? _header.FindElement(By.XPath("./div[2]/div/h1"));
+        _jobTitleElement = _header.FindElementOrDefaultAsWrapper(By.XPath("./div[2]/div/h1/a")) ?? _header.FindElement(By.XPath("./div[2]/div/h1"));
         JobID = jobID ?? long.Parse(_jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
         JobTitle = _jobTitleElement.Text;
 
