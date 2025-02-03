@@ -195,6 +195,7 @@ public class ComboBox
         ComboBoxOptions = new HashSet<ComboBoxOption>();
     }
     public string Label { get; set; } = null!;
+    public bool ContactInfo { get; set; }
     public string? SelectedOptionValue { get; set; }
     public ComboBoxOption? SelectedComboBoxOption { get; set; }
     public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
@@ -216,6 +217,7 @@ public class SingleLine
         JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
     }
     public string Label { get; set; } = null!;
+    public bool ContactInfo { get; set; }
     public string? SingleLineValue { get; set; } = null!;
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
 }
@@ -227,6 +229,7 @@ public class AutoLine
         JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
     }
     public string Label { get; set; } = null!;
+    public bool ContactInfo { get; set; }
     public string? AutoLineValue { get; set; } = null!;
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
 }

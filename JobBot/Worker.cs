@@ -223,17 +223,6 @@ public class Worker : BackgroundService
                 {
                     await item.JobDetailPane.Header.ClickEasyApply(driver);
                     await Wait(1, 1);
-                    var follow = driver.FindElementOrDefault(By.XPath("//*[@id=\"follow-company-checkbox\"]"));
-                    if (follow is not null)
-                    {
-                        var followLabel = driver.FindElement(By.XPath("//label[@for='follow-company-checkbox']"));
-                        var before = follow.Selected;
-                        if (follow.Selected is true)
-                        {
-                            followLabel.Click();
-                        }
-                        var after = follow.Selected;
-                    }
 
                     if (existing is not null)
                     {
@@ -258,129 +247,25 @@ public class Worker : BackgroundService
                             .ToHashSet();
                     }
 
-                    var questions = new Questions(driver, JobID);
+                    var result = await DoStepper(driver, context, JobID, dbRow);
 
-                    var toRemove1 = dbRow.JobPostingSingleLines.ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
-                    var toRemove2 = dbRow.JobPostingComboBoxes.ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
-                    var toRemove3 = dbRow.JobPostingAutoLines.ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
-                    foreach (var o in toRemove1)
-                        dbRow.JobPostingSingleLines.Remove(o);
-                    foreach (var o in toRemove2)
-                        dbRow.JobPostingComboBoxes.Remove(o);
-                    foreach (var o in toRemove3)
-                        dbRow.JobPostingAutoLines.Remove(o);
-
-                    foreach (var question in questions.Singles)
+                    if (result is false)
                     {
-                        var singleLine = context.SingleLines
-                            .FirstOrDefault(x => x.Label == question.Label);
-                        if (singleLine is null)
-                        {
-                            singleLine = new SingleLine()
-                            {
-                                Label = question.Label,
-                                SingleLineValue = question.Input,
-                            };
-                            context.SingleLines.Add(singleLine);
-                        }
-                        else // update selected value?
-                        {
+                        var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
+                        closeBtn.Click();
+                        await Wait();
 
-                        }
-
-                        if (dbRow.JobPostingSingleLines.Any(x => x.Label == question.Label) is false)
-                        {
-                            dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
-                            {
-                                SingleLine = singleLine,
-                            });
-                        }
-
-                        context.SaveChanges();
+                        var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
+                        discard.Click();
+                        await Wait();
                     }
-
-                    foreach (var question in questions.Combos)
+                    else
                     {
-                        var comboBox = context.ComboBoxes
-                            .Include(x => x.SelectedComboBoxOption!.ComboBox)
-                            .Include(x => x.ComboBoxOptions)
-                            .FirstOrDefault(x => x.Label == question.Label);
-                        if (comboBox is null)
-                        {
-                            comboBox = new ComboBox()
-                            {
-                                Label = question.Label,
-                                //SelectedOptionValue = question.Input,
-                                ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
-                                {
-                                    Label = question.Label,
-                                    OptionValue = x
-                                }).ToHashSet(),
-                            };
-                            context.ComboBoxes.Add(comboBox);
-                            context.SaveChanges();
-                            // Possible circular reference requires these to be seperate writes
-                            comboBox.SelectedOptionValue = question.Input;
-                            context.SaveChanges();
-                        }
-                        else // Upsert options?, update selected value
-                        {
-
-                        }
-
-                        if (dbRow.JobPostingComboBoxes.Any(x => x.Label == question.Label) is false)
-                        {
-                            dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
-                            {
-                                ComboBox = comboBox,
-                            });
-                        }
-
-                        context.SaveChanges();
+                        row.Applied = true;
+                        dbRow.Applied = true;
+                        count++;
+                        list.Add(item);
                     }
-
-                    foreach (var question in questions.Autos)
-                    {
-                        var auto = context.AutoLines
-                            .FirstOrDefault(x => x.Label == question.Label);
-                        if (auto is null)
-                        {
-                            auto = new AutoLine()
-                            {
-                                Label = question.Label,
-                                AutoLineValue = question.Input,
-                            };
-                            context.AutoLines.Add(auto);
-                        }
-                        else // update selected value?
-                        {
-
-                        }
-
-                        if (dbRow.JobPostingAutoLines.Any(x => x.Label == question.Label) is false)
-                        {
-                            dbRow.JobPostingAutoLines.Add(new JobPostingAutoLine()
-                            {
-                                AutoLine = auto,
-                            });
-                        }
-
-                        context.SaveChanges();
-                    }
-
-                    var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
-                    closeBtn.Click();
-                    await Wait();
-
-                    var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
-                    discard.Click();
-                    await Wait();
-
-                    // Do apply here!
-                    row.Applied = true;
-                    dbRow.Applied = true;
-                    count++;
-                    list.Add(item);
                 }
             }
 
@@ -402,6 +287,205 @@ public class Worker : BackgroundService
 
         //var jobPage = new JobPage(driver);
         return list.ToArray();
+    }
+
+    private async Task<bool> DoStepper(ChromeDriver driver, DataContext context, long JobID, JobPosting dbRow)
+    {
+        while (true)
+        {
+            var header = driver.FindElement(By.XPath("//form[1]/div[1]/div[1]/h3[1]"));
+            var headerText = header.Text;
+            UncheckFollow(driver);
+            if (headerText == "Contact info" || headerText == "Additional Questions")
+            {
+                var questions = new Questions(driver, JobID);
+                UpsertQuestions(context, dbRow, questions, headerText == "Contact info");
+
+                // Fill in any questions from db that we can.
+                // Are there any that we can't? Then bail out
+
+                var missingA = true;
+
+                if (missingA)
+                    return false;
+
+                var result = await ClickContinue(driver);
+                if (result)
+                    return true;
+            }
+            else if (headerText == "Resume" || headerText == "Education" || headerText == "Review")
+            {
+                var result = await ClickContinue(driver);
+                if (result)
+                    return true;
+            }
+            else
+            {
+                throw new Exception("Unrecognized step " + headerText);
+            }
+            await Wait(3);
+        }
+    }
+
+    /// <summary>
+    /// Returns true if submit. False if just continuing to next step
+    /// </summary>
+    private async Task<bool> ClickContinue(ChromeDriver driver)
+    {
+        var continueBtn = driver.FindElementOrDefault(By.XPath("//button[@aria-label='Continue to next step']"))
+            ?? driver.FindElementOrDefault(By.XPath("//button[@aria-label='Review your application']"));
+        if (continueBtn is not null)
+        {
+            continueBtn.Click();
+            return false;
+        }
+        else
+        {
+            var sumbitBtn = driver.FindElementOrDefault(By.XPath("//button[@aria-label='Submit application']"));
+            if (sumbitBtn is null)
+                throw new Exception("Cannot continue to next step or submit");
+
+
+            // For testing purposes we will just close the dialog instead and pretend we submit
+            var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
+            closeBtn.Click();
+            await Wait();
+
+            var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
+            discard.Click();
+            await Wait();
+
+            return true;
+
+            sumbitBtn.Click();
+            return true;
+        }
+    }
+
+    private static void UncheckFollow(ChromeDriver driver)
+    {
+        var follow = driver.FindElementOrDefault(By.XPath("//*[@id=\"follow-company-checkbox\"]"));
+        if (follow is not null)
+        {
+            var followLabel = driver.FindElement(By.XPath("//label[@for='follow-company-checkbox']"));
+            var before = follow.Selected;
+            if (follow.Selected is true)
+            {
+                followLabel.Click();
+            }
+            var after = follow.Selected;
+        }
+    }
+
+    private static void UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, bool contactInfo)
+    {
+        var toRemove1 = dbRow.JobPostingSingleLines.Where(x => x.SingleLine.ContactInfo == contactInfo).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
+        var toRemove2 = dbRow.JobPostingComboBoxes.Where(x => x.ComboBox.ContactInfo == contactInfo).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
+        var toRemove3 = dbRow.JobPostingAutoLines.Where(x => x.AutoLine.ContactInfo == contactInfo).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
+        foreach (var o in toRemove1)
+            dbRow.JobPostingSingleLines.Remove(o);
+        foreach (var o in toRemove2)
+            dbRow.JobPostingComboBoxes.Remove(o);
+        foreach (var o in toRemove3)
+            dbRow.JobPostingAutoLines.Remove(o);
+
+        foreach (var question in questions.Singles)
+        {
+            var singleLine = context.SingleLines
+                .FirstOrDefault(x => x.Label == question.Label);
+            if (singleLine is null)
+            {
+                singleLine = new SingleLine()
+                {
+                    Label = question.Label,
+                    SingleLineValue = question.Input,
+                };
+                context.SingleLines.Add(singleLine);
+            }
+            else // update selected value?
+            {
+
+            }
+
+            if (dbRow.JobPostingSingleLines.Any(x => x.Label == question.Label) is false)
+            {
+                dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
+                {
+                    SingleLine = singleLine,
+                });
+            }
+
+            context.SaveChanges();
+        }
+
+        foreach (var question in questions.Combos)
+        {
+            var comboBox = context.ComboBoxes
+                .Include(x => x.SelectedComboBoxOption!.ComboBox)
+                .Include(x => x.ComboBoxOptions)
+                .FirstOrDefault(x => x.Label == question.Label);
+            if (comboBox is null)
+            {
+                comboBox = new ComboBox()
+                {
+                    Label = question.Label,
+                    //SelectedOptionValue = question.Input,
+                    ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
+                    {
+                        Label = question.Label,
+                        OptionValue = x
+                    }).ToHashSet(),
+                };
+                context.ComboBoxes.Add(comboBox);
+                context.SaveChanges();
+                // Possible circular reference requires these to be seperate writes
+                comboBox.SelectedOptionValue = question.Input;
+                context.SaveChanges();
+            }
+            else // Upsert options?, update selected value
+            {
+
+            }
+
+            if (dbRow.JobPostingComboBoxes.Any(x => x.Label == question.Label) is false)
+            {
+                dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
+                {
+                    ComboBox = comboBox,
+                });
+            }
+
+            context.SaveChanges();
+        }
+
+        foreach (var question in questions.Autos)
+        {
+            var auto = context.AutoLines
+                .FirstOrDefault(x => x.Label == question.Label);
+            if (auto is null)
+            {
+                auto = new AutoLine()
+                {
+                    Label = question.Label,
+                    AutoLineValue = question.Input,
+                };
+                context.AutoLines.Add(auto);
+            }
+            else // update selected value?
+            {
+
+            }
+
+            if (dbRow.JobPostingAutoLines.Any(x => x.Label == question.Label) is false)
+            {
+                dbRow.JobPostingAutoLines.Add(new JobPostingAutoLine()
+                {
+                    AutoLine = auto,
+                });
+            }
+
+            context.SaveChanges();
+        }
     }
 
     /// <summary>

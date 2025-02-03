@@ -16,6 +16,7 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     Label = table.Column<string>(type: "TEXT", nullable: false),
+                    ContactInfo = table.Column<bool>(type: "INTEGER", nullable: false),
                     AutoLineValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -54,6 +55,7 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     Label = table.Column<string>(type: "TEXT", nullable: false),
+                    ContactInfo = table.Column<bool>(type: "INTEGER", nullable: false),
                     SingleLineValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -114,6 +116,7 @@ namespace JobBot.Migrations
                 columns: table => new
                 {
                     Label = table.Column<string>(type: "TEXT", nullable: false),
+                    ContactInfo = table.Column<bool>(type: "INTEGER", nullable: false),
                     SelectedOptionValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>

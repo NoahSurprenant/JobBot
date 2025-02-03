@@ -25,6 +25,9 @@ namespace JobBot.Migrations
                     b.Property<string>("AutoLineValue")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Label");
 
                     b.ToTable("AutoLines", (string)null);
@@ -34,6 +37,9 @@ namespace JobBot.Migrations
                 {
                     b.Property<string>("Label")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SelectedOptionValue")
                         .HasColumnType("TEXT");
@@ -168,6 +174,9 @@ namespace JobBot.Migrations
                 {
                     b.Property<string>("Label")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SingleLineValue")
                         .HasColumnType("TEXT");

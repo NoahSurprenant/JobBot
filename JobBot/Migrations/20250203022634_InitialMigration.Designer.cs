@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250203014933_InitialMigration")]
+    [Migration("20250203022634_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -28,6 +28,9 @@ namespace JobBot.Migrations
                     b.Property<string>("AutoLineValue")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Label");
 
                     b.ToTable("AutoLines", (string)null);
@@ -37,6 +40,9 @@ namespace JobBot.Migrations
                 {
                     b.Property<string>("Label")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SelectedOptionValue")
                         .HasColumnType("TEXT");
@@ -171,6 +177,9 @@ namespace JobBot.Migrations
                 {
                     b.Property<string>("Label")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ContactInfo")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SingleLineValue")
                         .HasColumnType("TEXT");
