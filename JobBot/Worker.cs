@@ -251,6 +251,8 @@ public class Worker : BackgroundService
 
                     if (result is false)
                     {
+                        dbRow.NoApplyReason = "Missing answers";
+
                         var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
                         closeBtn.Click();
                         await Wait();
@@ -293,31 +295,63 @@ public class Worker : BackgroundService
     {
         while (true)
         {
-            var header = driver.FindElement(By.XPath("//form[1]/div[1]/div[1]/h3[1]"));
-            var headerText = header.Text;
-            UncheckFollow(driver);
-            if (headerText == "Contact info" || headerText == "Additional Questions")
+            var header = driver.FindElementOrDefault(By.XPath("//form[1]/div[1]/div[1]/h3[1]"));
+            if (header is null)
             {
-                var questions = new Questions(driver, JobID);
-                UpsertQuestions(context, dbRow, questions, headerText == "Contact info");
+                // Might want a better way to handle these non-form headers...
+                header = driver.FindElementOrDefault(By.XPath("//h3/span[text()=\"Work experience\"]"));
+                if (header is null)
+                {
+                    header = driver.FindElementOrDefault(By.XPath("//h3/span[text()=\"Education\"]"));
+                    if (header is null)
+                    {
+                        // Rare but sometimes we get this odd 'Review your application' page that is not part of form.
+                        header = driver.FindElement(By.XPath("//h3[text()=\"Review your application\"]"));
+                    }
+                }
+                
+            }
+            var headerText = header.Text;
+
+            UncheckFollow(driver);
+            if (headerText == "Contact info" || headerText == "Additional Questions" || headerText == "Work authorization")
+            {
+                var qp = headerText switch
+                {
+                    "Contact info" => QuestionPage.ContactInfo,
+                    "Additional Questions" => QuestionPage.AdditionalQuestions,
+                    "Work authorization" => QuestionPage.WorkAuthorization,
+                    _ => throw new ArgumentOutOfRangeException(nameof(headerText), headerText,
+                        $"{nameof(headerText)} was {headerText}. Must be Contact info, Additional Questions, or Work authorization"),
+                };
+                // Yet another question page found 'Work authorization' which also does not need the div skip.
+                // If header can be anything maybe we need better way to determine if we are at a question step
+                var questions = new Questions(driver, JobID, skipDiv: qp is QuestionPage.ContactInfo);
+                UpsertQuestions(context, dbRow, questions, qp);
 
                 // Fill in any questions from db that we can.
                 // Are there any that we can't? Then bail out
 
-                var missingA = true;
+                var missing = questions.AnyUnanswered();
 
-                if (missingA)
+                if (missing)
+                {
+                    
                     return false;
+                }
+                    
 
                 var result = await ClickContinue(driver);
                 if (result)
                     return true;
             }
-            else if (headerText == "Resume" || headerText == "Education" || headerText == "Review")
+            else if (headerText == "Resume" || headerText == "Education" || headerText == "Review" || headerText == "Review your application" || headerText == "Work experience")
             {
                 var result = await ClickContinue(driver);
                 if (result)
                     return true;
+                else if (headerText == "Review" || headerText == "Review your application")
+                    throw new Exception("Failed to submit app");
             }
             else
             {
@@ -377,11 +411,11 @@ public class Worker : BackgroundService
         }
     }
 
-    private static void UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, bool contactInfo)
+    private static void UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, QuestionPage questionPage)
     {
-        var toRemove1 = dbRow.JobPostingSingleLines.Where(x => x.SingleLine.ContactInfo == contactInfo).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
-        var toRemove2 = dbRow.JobPostingComboBoxes.Where(x => x.ComboBox.ContactInfo == contactInfo).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
-        var toRemove3 = dbRow.JobPostingAutoLines.Where(x => x.AutoLine.ContactInfo == contactInfo).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
+        var toRemove1 = dbRow.JobPostingSingleLines.Where(x => x.SingleLine.QuestionPage == questionPage).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
+        var toRemove2 = dbRow.JobPostingComboBoxes.Where(x => x.ComboBox.QuestionPage == questionPage).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
+        var toRemove3 = dbRow.JobPostingAutoLines.Where(x => x.AutoLine.QuestionPage == questionPage).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
         foreach (var o in toRemove1)
             dbRow.JobPostingSingleLines.Remove(o);
         foreach (var o in toRemove2)
@@ -439,8 +473,20 @@ public class Worker : BackgroundService
                 context.ComboBoxes.Add(comboBox);
                 context.SaveChanges();
                 // Possible circular reference requires these to be seperate writes
-                comboBox.SelectedOptionValue = question.Input;
-                context.SaveChanges();
+                if (question.Input is not null && question.Input is not "Select an option")
+                {
+                    comboBox.SelectedOptionValue = question.Input;
+                    context.SaveChanges();
+                }
+                else if (question.Input is not null)
+                {
+                    var a = 1;
+                }
+                else
+                {
+                    var a = 1;
+                }
+                
             }
             else // Upsert options?, update selected value
             {
