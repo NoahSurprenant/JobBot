@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250209231442_InitialMigrations")]
-    partial class InitialMigrations
+    [Migration("20250210024003_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,6 +158,21 @@ namespace JobBot.Migrations
                     b.ToTable("JobPostingComboBoxes", (string)null);
                 });
 
+            modelBuilder.Entity("JobBot.Database.JobPostingRadio", b =>
+                {
+                    b.Property<long>("JobPostingID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("JobPostingID", "Label");
+
+                    b.HasIndex("Label");
+
+                    b.ToTable("JobPostingRadios", (string)null);
+                });
+
             modelBuilder.Entity("JobBot.Database.JobPostingSingleLine", b =>
                 {
                     b.Property<long>("JobPostingID")
@@ -171,6 +186,40 @@ namespace JobBot.Migrations
                     b.HasIndex("Label");
 
                     b.ToTable("JobPostingSingleLines", (string)null);
+                });
+
+            modelBuilder.Entity("JobBot.Database.Radio", b =>
+                {
+                    b.Property<string>("Label")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuestionPage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SelectedOptionValue")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Label");
+
+                    b.HasIndex("SelectedOptionValue", "Label")
+                        .IsUnique();
+
+                    b.ToTable("Radios", (string)null);
+                });
+
+            modelBuilder.Entity("JobBot.Database.RadioOption", b =>
+                {
+                    b.Property<string>("OptionValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("OptionValue", "Label");
+
+                    b.HasIndex("Label");
+
+                    b.ToTable("RadioOptions", (string)null);
                 });
 
             modelBuilder.Entity("JobBot.Database.SingleLine", b =>
@@ -247,6 +296,25 @@ namespace JobBot.Migrations
                     b.Navigation("JobPosting");
                 });
 
+            modelBuilder.Entity("JobBot.Database.JobPostingRadio", b =>
+                {
+                    b.HasOne("JobBot.Database.JobPosting", "JobPosting")
+                        .WithMany("JobPostingRadios")
+                        .HasForeignKey("JobPostingID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JobBot.Database.Radio", "Radio")
+                        .WithMany("JobPostingRadios")
+                        .HasForeignKey("Label")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPosting");
+
+                    b.Navigation("Radio");
+                });
+
             modelBuilder.Entity("JobBot.Database.JobPostingSingleLine", b =>
                 {
                     b.HasOne("JobBot.Database.JobPosting", "JobPosting")
@@ -264,6 +332,26 @@ namespace JobBot.Migrations
                     b.Navigation("JobPosting");
 
                     b.Navigation("SingleLine");
+                });
+
+            modelBuilder.Entity("JobBot.Database.Radio", b =>
+                {
+                    b.HasOne("JobBot.Database.RadioOption", "SelectedRadioOption")
+                        .WithOne("SelectedRadio")
+                        .HasForeignKey("JobBot.Database.Radio", "SelectedOptionValue", "Label");
+
+                    b.Navigation("SelectedRadioOption");
+                });
+
+            modelBuilder.Entity("JobBot.Database.RadioOption", b =>
+                {
+                    b.HasOne("JobBot.Database.Radio", "Radio")
+                        .WithMany("RadioOptions")
+                        .HasForeignKey("Label")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Radio");
                 });
 
             modelBuilder.Entity("JobBot.Database.AutoLine", b =>
@@ -289,7 +377,21 @@ namespace JobBot.Migrations
 
                     b.Navigation("JobPostingComboBoxes");
 
+                    b.Navigation("JobPostingRadios");
+
                     b.Navigation("JobPostingSingleLines");
+                });
+
+            modelBuilder.Entity("JobBot.Database.Radio", b =>
+                {
+                    b.Navigation("JobPostingRadios");
+
+                    b.Navigation("RadioOptions");
+                });
+
+            modelBuilder.Entity("JobBot.Database.RadioOption", b =>
+                {
+                    b.Navigation("SelectedRadio");
                 });
 
             modelBuilder.Entity("JobBot.Database.SingleLine", b =>

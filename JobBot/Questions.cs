@@ -65,9 +65,13 @@ public class Questions
     {
         return Autos.Where(x => x.Input is null).ToList();
     }
+    public List<RadioDto> UnansweredRadios()
+    {
+        return Radios.Where(x => x.Input is null).ToList();
+    }
     public bool AnyUnanswered()
     {
-        return UnansweredSingles().Any() || UnansweredCombos().Any() || UnansweredAutos().Any();
+        return UnansweredSingles().Count != 0 || UnansweredCombos().Count != 0 || UnansweredAutos().Count != 0 || UnansweredRadios().Count != 0;
     }
 }
 
@@ -153,9 +157,8 @@ public class ComboDto
 
 public class RadioDto
 {
-    //private const string _const = "text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
-    public string ForAttribute { get; private set; }
+    public string IDAttribute { get; private set; }
     //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
@@ -175,18 +178,13 @@ public class RadioDto
         Options = options.Select(x => x.GetDomAttribute("value")).ToArray();
         if (Options.Any() is false)
             throw new Exception("Failed to get options");
-        ForAttribute = fieldset.GetDomAttribute("id") ?? throw new Exception("Missing id attribute");
+        IDAttribute = fieldset.GetDomAttribute("id") ?? throw new Exception("Missing id attribute");
         //Key = ForAttribute.Replace(_const + jobID + "-", "");
 
         var selected = options.FirstOrDefault(x => x.Selected);
         if (selected is not null)
             Input = selected.GetDomAttribute("value") ?? throw new Exception("Failed to get value of selected radio");
-
-        //var foo = options.Select(x => new
-        //{
-        //    Selected = x.Selected,
-        //    Value = x.GetDomAttribute("value"),
-        //}).ToArray();
-
+        if (Input == string.Empty)
+            Input = null;
     }
 }

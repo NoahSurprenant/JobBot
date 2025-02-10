@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace JobBot.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigrations : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -166,6 +166,54 @@ namespace JobBot.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "JobPostingRadios",
+                columns: table => new
+                {
+                    JobPostingID = table.Column<long>(type: "INTEGER", nullable: false),
+                    Label = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_JobPostingRadios", x => new { x.JobPostingID, x.Label });
+                    table.ForeignKey(
+                        name: "FK_JobPostingRadios_JobPostings_JobPostingID",
+                        column: x => x.JobPostingID,
+                        principalTable: "JobPostings",
+                        principalColumn: "JobPostingID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RadioOptions",
+                columns: table => new
+                {
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
+                    OptionValue = table.Column<string>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RadioOptions", x => new { x.OptionValue, x.Label });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Radios",
+                columns: table => new
+                {
+                    Label = table.Column<string>(type: "TEXT", nullable: false),
+                    QuestionPage = table.Column<int>(type: "INTEGER", nullable: false),
+                    SelectedOptionValue = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Radios", x => x.Label);
+                    table.ForeignKey(
+                        name: "FK_Radios_RadioOptions_SelectedOptionValue_Label",
+                        columns: x => new { x.SelectedOptionValue, x.Label },
+                        principalTable: "RadioOptions",
+                        principalColumns: new[] { "OptionValue", "Label" });
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_ComboBoxes_SelectedOptionValue_Label",
                 table: "ComboBoxes",
@@ -188,9 +236,25 @@ namespace JobBot.Migrations
                 column: "Label");
 
             migrationBuilder.CreateIndex(
+                name: "IX_JobPostingRadios_Label",
+                table: "JobPostingRadios",
+                column: "Label");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_JobPostingSingleLines_Label",
                 table: "JobPostingSingleLines",
                 column: "Label");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RadioOptions_Label",
+                table: "RadioOptions",
+                column: "Label");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Radios_SelectedOptionValue_Label",
+                table: "Radios",
+                columns: new[] { "SelectedOptionValue", "Label" },
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Label",
@@ -198,6 +262,22 @@ namespace JobBot.Migrations
                 columns: new[] { "SelectedOptionValue", "Label" },
                 principalTable: "ComboBoxOptions",
                 principalColumns: new[] { "OptionValue", "Label" });
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_JobPostingRadios_Radios_Label",
+                table: "JobPostingRadios",
+                column: "Label",
+                principalTable: "Radios",
+                principalColumn: "Label",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_RadioOptions_Radios_Label",
+                table: "RadioOptions",
+                column: "Label",
+                principalTable: "Radios",
+                principalColumn: "Label",
+                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
@@ -207,11 +287,18 @@ namespace JobBot.Migrations
                 name: "FK_ComboBoxes_ComboBoxOptions_SelectedOptionValue_Label",
                 table: "ComboBoxes");
 
+            migrationBuilder.DropForeignKey(
+                name: "FK_RadioOptions_Radios_Label",
+                table: "RadioOptions");
+
             migrationBuilder.DropTable(
                 name: "JobPostingAutoLines");
 
             migrationBuilder.DropTable(
                 name: "JobPostingComboBoxes");
+
+            migrationBuilder.DropTable(
+                name: "JobPostingRadios");
 
             migrationBuilder.DropTable(
                 name: "JobPostingSingleLines");
@@ -230,6 +317,12 @@ namespace JobBot.Migrations
 
             migrationBuilder.DropTable(
                 name: "ComboBoxes");
+
+            migrationBuilder.DropTable(
+                name: "Radios");
+
+            migrationBuilder.DropTable(
+                name: "RadioOptions");
         }
     }
 }

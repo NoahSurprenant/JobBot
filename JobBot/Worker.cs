@@ -245,6 +245,13 @@ public class Worker : BackgroundService
                             .Include(x => x.AutoLine)
                             .Where(x => x.JobPostingID == dbRow.JobPostingID)
                             .ToHashSet();
+
+                        dbRow.JobPostingRadios = context
+                            .JobPostingRadios
+                            .Include(x => x.Radio.RadioOptions)
+                            .Include(x => x.Radio.SelectedRadioOption)
+                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
+                            .ToHashSet();
                     }
 
                     var result = await DoStepper(driver, context, JobID, dbRow);
@@ -416,12 +423,15 @@ public class Worker : BackgroundService
         var toRemove1 = dbRow.JobPostingSingleLines.Where(x => x.SingleLine.QuestionPage == questionPage).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
         var toRemove2 = dbRow.JobPostingComboBoxes.Where(x => x.ComboBox.QuestionPage == questionPage).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
         var toRemove3 = dbRow.JobPostingAutoLines.Where(x => x.AutoLine.QuestionPage == questionPage).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
+        var toRemove4 = dbRow.JobPostingRadios.Where(x => x.Radio.QuestionPage == questionPage).ExceptBy(questions.Radios.Select(x => x.Label), x => x.Label);
         foreach (var o in toRemove1)
             dbRow.JobPostingSingleLines.Remove(o);
         foreach (var o in toRemove2)
             dbRow.JobPostingComboBoxes.Remove(o);
         foreach (var o in toRemove3)
             dbRow.JobPostingAutoLines.Remove(o);
+        foreach (var o in toRemove4)
+            dbRow.JobPostingRadios.Remove(o);
 
         foreach (var question in questions.Singles)
         {
@@ -498,6 +508,50 @@ public class Worker : BackgroundService
                 dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
                 {
                     ComboBox = comboBox,
+                });
+            }
+
+            context.SaveChanges();
+        }
+
+        foreach (var question in questions.Radios)
+        {
+            var radio = context.Radios
+                .Include(x => x.SelectedRadioOption!.Radio)
+                .Include(x => x.RadioOptions)
+                .FirstOrDefault(x => x.Label == question.Label);
+            if (radio is null)
+            {
+                radio = new Radio()
+                {
+                    Label = question.Label,
+                    //SelectedOptionValue = question.Input,
+                    RadioOptions = question.Options.Select(x => new RadioOption()
+                    {
+                        Label = question.Label,
+                        OptionValue = x
+                    }).ToHashSet(),
+                };
+                context.Radios.Add(radio);
+                context.SaveChanges();
+                // Possible circular reference requires these to be seperate writes
+                if (question.Input is not null)
+                {
+                    radio.SelectedOptionValue = question.Input;
+                    context.SaveChanges();
+                }
+
+            }
+            else // Upsert options?, update selected value
+            {
+
+            }
+
+            if (dbRow.JobPostingRadios.Any(x => x.Label == question.Label) is false)
+            {
+                dbRow.JobPostingRadios.Add(new JobPostingRadio()
+                {
+                    Radio = radio,
                 });
             }
 
