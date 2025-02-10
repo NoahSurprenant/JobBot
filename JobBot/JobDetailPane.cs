@@ -4,12 +4,26 @@ namespace JobBot;
 public class JobDetailPane
 {
     public Header Header { get; set; }
-
+    public JobDetails JobDetails { get; set; }
 
     //*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div
-    public JobDetailPane(IWebElement wrapper)
+    public JobDetailPane(IWebDriver driver, IWebElement wrapper)
     {
         Header = new Header(wrapper.FindElement(By.XPath("./div[1]/div/div[1]/div")));
+        JobDetails = new JobDetails(driver);
+    }
+}
+
+public class JobDetails
+{
+    public string Details = "";
+    public JobDetails(IWebDriver driver)
+    {
+        //var elements = driver.FindElements(By.XPath("//*[@id=\"job-details\"]/div[1]/p[1]/span"));
+        //Details = elements.Select(x => x.Text).ToArray();
+
+        var element = driver.FindElement(By.XPath("//*[@id=\"job-details\"]/div[1]/p[1]"));
+        Details = element.Text;
     }
 }
 

@@ -191,9 +191,15 @@ public class Worker : BackgroundService
             
 
             var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-            var item = new JobRowWithDetail(row, new(detailContent));
+            var item = new JobRowWithDetail(row, new(driver, detailContent));
 
             using var transaction = context.Database.BeginTransaction();
+
+
+            if (existing is not null)
+            {
+                existing.JobPostingDetail = context.JobPostingDetails.FirstOrDefault(x => x.JobPostingID == existing.JobPostingID);
+            }
 
             //upsert
             var dbRow = existing?.Update(item) ?? JobPosting.Create(item);

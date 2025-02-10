@@ -13,6 +13,7 @@ public class DataContext : DbContext
     }
 
     public DbSet<JobPosting> JobPostings { get; set; }
+    public DbSet<JobPostingDetail> JobPostingDetails { get; set; }
     public DbSet<Radio> Radios { get; set; }
     public DbSet<ComboBox> ComboBoxes { get; set; }
     public DbSet<SingleLine> SingleLines { get; set; }
@@ -28,6 +29,7 @@ public class DataContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new JobPostingConfiguration());
+        modelBuilder.ApplyConfiguration(new JobPostingDetailConfiguration());
         modelBuilder.ApplyConfiguration(new RadioConfiguration());
         modelBuilder.ApplyConfiguration(new ComboBoxConfiguration());
         modelBuilder.ApplyConfiguration(new SingleLineConfiguration());
@@ -46,6 +48,24 @@ public class JobPostingConfiguration : IEntityTypeConfiguration<JobPosting>
     public void Configure(EntityTypeBuilder<JobPosting> entity)
     {
         entity.ToTable("JobPostings");
+
+        entity.HasKey(e => e.JobPostingID);
+
+        // Value always comes from LinkedIn
+        entity.Property(e => e.JobPostingID).ValueGeneratedNever();
+
+        entity.HasOne(x => x.JobPostingDetail)
+            .WithOne(x => x.JobPosting)
+            .HasForeignKey<JobPostingDetail>(x => x.JobPostingID)
+            .IsRequired(false);
+    }
+}
+
+public class JobPostingDetailConfiguration : IEntityTypeConfiguration<JobPostingDetail>
+{
+    public void Configure(EntityTypeBuilder<JobPostingDetail> entity)
+    {
+        entity.ToTable("JobPostingDetails");
 
         entity.HasKey(e => e.JobPostingID);
 
@@ -322,6 +342,14 @@ public class AutoLine
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
 }
 
+public class JobPostingDetail
+{
+    public long JobPostingID { get; set; }
+    public string Details { get; set; } = null!;
+    public JobPosting JobPosting { get; set; } = null!;
+}
+
+
 public class JobPosting
 {
     public JobPosting()
@@ -335,6 +363,7 @@ public class JobPosting
     public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
+    public JobPostingDetail? JobPostingDetail { get; set; }
     public long JobPostingID { get; set; }
     public string CompanyName { get; set; } = null!;
     public string? CompanyLink { get; set; }
@@ -363,6 +392,10 @@ public class JobPosting
     public static JobPosting Create(JobRowWithDetail x)
     {
         var y = new JobPosting();
+        y.JobPostingDetail = new JobPostingDetail()
+        {
+            Details = x.JobDetailPane.JobDetails.Details,
+        };
         y.JobPostingID = x.JobRow.JobID;
         y.CompanyName = x.JobRow.CompanyName;
         y.CompanyLink = x.JobDetailPane.Header.CompanyLink;
@@ -391,6 +424,9 @@ public class JobPosting
 
     public JobPosting Update(JobRowWithDetail x)
     {
+        if (JobPostingDetail is null)
+            JobPostingDetail = new JobPostingDetail();
+        JobPostingDetail.Details = x.JobDetailPane.JobDetails.Details;
         JobPostingID = x.JobRow.JobID;
         CompanyName = x.JobRow.CompanyName;
         CompanyLink = x.JobDetailPane.Header.CompanyLink;
