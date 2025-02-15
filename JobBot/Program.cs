@@ -1,6 +1,7 @@
 using JobBot.Database;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace JobBot
 {
@@ -8,8 +9,8 @@ namespace JobBot
     {
         public static void Main(string[] args)
         {
-            var builder = Host.CreateApplicationBuilder(args);
-            builder.Services.AddHostedService<Worker>();
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddTransient<Service>();
 
             builder.Services.AddDbContextFactory<DataContext>(options =>
             {
@@ -27,7 +28,34 @@ namespace JobBot
                 options.UseSqlite(connectionString);
             });
 
+            builder.Services.AddControllers();
+            // Learn more about configuring Swagger/ OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(x =>
+            {
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                x.IncludeXmlComments(xmlPath);
+            });
+
+            builder.Services.AddSpaYarp();
+
             var host = builder.Build();
+
+            host.UseSwagger();
+            host.UseSwaggerUI();
+
+            host.UseRouting();
+            //host.UseHttpsRedirection();
+            host.UseStaticFiles();
+            host.UseAuthorization();
+
+            host.MapControllers();
+
+            if (host.Environment.IsDevelopment())
+                host.UseSpaYarp();
+            else
+                host.MapFallbackToFile("index.html");
 
             var factory = host.Services.GetRequiredService<IDbContextFactory<DataContext>>();
             var context = factory.CreateDbContext();

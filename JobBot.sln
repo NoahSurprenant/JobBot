@@ -1,9 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobBot", "JobBot\JobBot.csproj", "{EE577521-B181-4433-8B9C-F9FB1F620E54}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "JobBot.Client", "JobBot.Client\JobBot.Client.esproj", "{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{034D5639-4420-4FF1-86DC-D7BF7CE2BD58}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +22,12 @@ Global
 		{EE577521-B181-4433-8B9C-F9FB1F620E54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE577521-B181-4433-8B9C-F9FB1F620E54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE577521-B181-4433-8B9C-F9FB1F620E54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{733D0571-BC8C-4DB8-BF65-B17108E9EB6D}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

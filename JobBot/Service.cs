@@ -4,20 +4,19 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.UI;
-using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 
 namespace JobBot;
 
-public class Worker : BackgroundService
+public class Service
 {
     private readonly IDbContextFactory<DataContext> _factory;
-    private readonly ILogger<Worker> _logger;
+    private readonly ILogger<Service> _logger;
     private readonly Random _random = new Random();
     //private readonly string _proxy;
     private readonly string _cache;
 
-    public Worker(IDbContextFactory<DataContext> factory, ILogger<Worker> logger, IConfiguration configuration)
+    public Service(IDbContextFactory<DataContext> factory, ILogger<Service> logger, IConfiguration configuration)
     {
         _factory = factory;
         _logger = logger;
@@ -25,7 +24,7 @@ public class Worker : BackgroundService
         _cache = configuration.GetValue<string>("Cache") ?? throw new Exception("Missing cache location");
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ExecuteAsync(string job, string location, CancellationToken stoppingToken)
     {
         var options = new ChromeOptions();
         options.AddArgument("--start-maximized");
@@ -73,8 +72,8 @@ public class Worker : BackgroundService
 
         try
         {
-            var job = ".net developer";
-            var location = "Detroit Metropolitan Area";
+            //var job = ".net developer";
+            //var location = "Detroit Metropolitan Area";
             var result = await Apply(driver, job, location, 100, 250);
         }
         catch (Exception ex)
