@@ -1,0 +1,10 @@
+<h1 class="text-3xl font-bold underline ml-2">
+Apply
+</h1>
+
+<form [formGroup]="form" class="grid ml-2">
+    <x-input class="max-w-100" formControlName="job">Job</x-input>
+    <x-input class="max-w-100" formControlName="location">Location</x-input>
+    <x-button class="mt-1.5" [disabled]="disabled()" (clicked)="clicked()">Submit</x-button>
+</form>
+
