@@ -22,7 +22,7 @@ export class ApplyComponent {
   form: FormGroup<MyFormGroup>;
   valueChanges: Signal<Partial<MyForm> | undefined>;
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private touchService: ToastService) {
+  constructor(private fb: FormBuilder, private http: HttpClient, private toastService: ToastService) {
     this.form = this.fb.group<MyFormGroup>({
       job: this.fb.control<string>('.net developer', Validators.required),
       location: this.fb.control<string>('Detroit Metropolitan Area', Validators.required),
@@ -41,10 +41,10 @@ export class ApplyComponent {
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: (x) => {
-          this.touchService.show('Success');
+          this.toastService.show('Success');
         },
         error: () => {
-          this.touchService.show('Error');
+          this.toastService.show('Error');
         },
       })
   }

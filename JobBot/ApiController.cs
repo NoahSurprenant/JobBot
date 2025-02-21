@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using JobBot.Database;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobBot;
 
@@ -7,10 +9,12 @@ namespace JobBot;
 public class ApiController : ControllerBase
 {
     private readonly Service _service;
+    private readonly DataContext _context;
 
-    public ApiController(Service service)
+    public ApiController(Service service, DataContext context)
     {
         _service = service;
+        _context = context;
     }
 
     /// <summary>
@@ -24,4 +28,45 @@ public class ApiController : ControllerBase
     {
         await _service.ExecuteAsync(job, location, ct);
     }
+
+    [HttpGet]
+    public async Task<QuestionDto[]> Questions(CancellationToken ct)
+    {
+        var autoLine = await _context.AutoLines
+            .Select(x => new QuestionDto(x.Label, x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null))
+            .ToArrayAsync(ct);
+
+        var combo = await _context.ComboBoxes
+            .Select(x => new QuestionDto(x.Label, x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray()))
+            .ToArrayAsync(ct);
+
+        var radio = await _context.Radios
+            .Select(x => new QuestionDto(x.Label, x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray()))
+            .ToArrayAsync(ct);
+
+        var single = await _context.SingleLines
+            .Select(x => new QuestionDto(x.Label, x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null))
+            .ToArrayAsync(ct);
+
+        return autoLine.Concat(combo).Concat(radio).Concat(single).ToArray();
+    }
+}
+
+public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options);
+
+//public class QuestionDto
+//{
+//    public required string Label { get; set; }
+//    public required string? Value { get; set; }
+//    public required QuestionPage QuestionPage { get; set; }
+//    public required QuestionKind QuestionKind { get; set; }
+//    public required string[]? Options { get; set; }
+//}
+
+public enum QuestionKind
+{
+    AutoLine,
+    ComboBox,
+    Radio,
+    SingleLine,
 }
