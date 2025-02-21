@@ -33,19 +33,19 @@ public class ApiController : ControllerBase
     public async Task<QuestionDto[]> Questions(CancellationToken ct)
     {
         var autoLine = await _context.AutoLines
-            .Select(x => new QuestionDto(x.Label, x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null))
             .ToArrayAsync(ct);
 
         var combo = await _context.ComboBoxes
-            .Select(x => new QuestionDto(x.Label, x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray()))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray()))
             .ToArrayAsync(ct);
 
         var radio = await _context.Radios
-            .Select(x => new QuestionDto(x.Label, x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray()))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray()))
             .ToArrayAsync(ct);
 
         var single = await _context.SingleLines
-            .Select(x => new QuestionDto(x.Label, x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null))
             .ToArrayAsync(ct);
 
         return autoLine.Concat(combo).Concat(radio).Concat(single).ToArray();

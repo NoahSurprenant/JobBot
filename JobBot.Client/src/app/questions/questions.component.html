@@ -1,6 +1,8 @@
 
 <x-button [disabled]="loading()" (clicked)="clicked()">Load</x-button>
 
+@if (!loading() && questions().length > 0) {
+<form [formGroup]="form">
 <div class="grid grid-cols-4">
     <div>Label</div>
     <div>Value</div>
@@ -8,8 +10,28 @@
     <div>Question Kind</div>
 @for (question of questions(); track $index) {
 <div>{{question.label}}</div>
-<div>{{question.value}}</div>
+<div>
+    @switch (question.questionKind) {
+        @case ('AutoLine') {
+            {{question.value}}
+        }
+        @case ('ComboBox') {
+            <x-dropdown [formControlName]="question.label" [options]="question.options!"></x-dropdown>
+        }
+        @case ('Radio') {
+            <x-dropdown [formControlName]="question.label" [options]="question.options!"></x-dropdown>
+        }
+        @case ('SingleLine') {
+            <x-input [formControlName]="question.label"></x-input>
+        }
+        @default {
+            Not supported
+        }
+    }
+</div>
 <div>{{question.questionPage}}</div>
 <div>{{question.questionKind}}</div>
 }
 </div>
+</form>
+}
