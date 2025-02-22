@@ -3,14 +3,17 @@
 
 @if (!loading() && questions().length > 0) {
 <form [formGroup]="form">
-<div class="grid grid-cols-4">
-    <div>Label</div>
-    <div>Value</div>
-    <div>Question Page</div>
-    <div>Question Kind</div>
+<div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)]">
+    <div class="font-bold flex items-center py-1.5">Label</div>
+    <div class="font-bold flex items-center py-1.5">Value</div>
+    <div class="font-bold flex items-center py-1.5">Question Page</div>
+    <div class="font-bold flex items-center py-1.5">Question Kind</div>
 @for (question of questions(); track $index) {
-<div>{{question.label}}</div>
-<div>
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+    {{question.label}}
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
     @switch (question.questionKind) {
         @case ('AutoLine') {
             {{question.value}}
@@ -29,8 +32,12 @@
         }
     }
 </div>
-<div>{{question.questionPage}}</div>
-<div>{{question.questionKind}}</div>
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+    {{question.questionPage}}
+</div>
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+    {{question.questionKind}}
+</div>
 }
 </div>
 </form>
