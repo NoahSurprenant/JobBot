@@ -17,6 +17,7 @@
     @switch (question.questionKind) {
         @case ('AutoLine') {
             {{question.value}}
+            <!-- <x-input [formControlName]="question.label" [type]="question.inputType!"></x-input> -->
         }
         @case ('ComboBox') {
             <x-dropdown [formControlName]="question.label" [options]="question.options!"></x-dropdown>
@@ -25,7 +26,7 @@
             <x-dropdown [formControlName]="question.label" [options]="question.options!"></x-dropdown>
         }
         @case ('SingleLine') {
-            <x-input [formControlName]="question.label"></x-input>
+            <x-input [formControlName]="question.label" [type]="question.inputType!"></x-input>
         }
         @default {
             Not supported

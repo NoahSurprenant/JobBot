@@ -33,26 +33,26 @@ public class ApiController : ControllerBase
     public async Task<QuestionDto[]> Questions(CancellationToken ct)
     {
         var autoLine = await _context.AutoLines
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null, x.InputType))
             .ToArrayAsync(ct);
 
         var combo = await _context.ComboBoxes
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray()))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray(), null))
             .ToArrayAsync(ct);
 
         var radio = await _context.Radios
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray()))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray(), null))
             .ToArrayAsync(ct);
 
         var single = await _context.SingleLines
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null))
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null, x.InputType))
             .ToArrayAsync(ct);
 
         return autoLine.Concat(combo).Concat(radio).Concat(single).ToArray();
     }
 }
 
-public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options);
+public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options, InputType? InputType);
 
 //public class QuestionDto
 //{

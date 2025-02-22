@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium;
+﻿using JobBot.Database;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
 namespace JobBot;
@@ -83,6 +84,7 @@ public class AutoDto
     //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
+    public InputType InputType { get; private set; }
 
     public AutoDto(IWebElement inner, long jobID)
     {
@@ -94,6 +96,26 @@ public class AutoDto
             Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
         //Key = ForAttribute.Replace(_const + jobID + "-", "");
+        if (ForAttribute.EndsWith("numeric"))
+        {
+            InputType = InputType.number;
+        }
+        else
+        {
+            InputType = InputType.text;
+        }
+        //var type = input.GetAttribute("type");
+        //if (type is not null)
+        //{
+        //    if (Enum.TryParse<InputType>(type, out var inputType))
+        //    {
+        //        InputType = inputType;
+        //    }
+        //    else
+        //    {
+        //        // TODO: log
+        //    }
+        //}
     }
 }
 
@@ -105,6 +127,7 @@ public class SingleDto
     //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
+    public InputType InputType { get; private set; }
 
     public SingleDto(IWebElement inner, long jobID)
     {
@@ -119,6 +142,26 @@ public class SingleDto
         if (Input == string.Empty)
             Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
+        if (ForAttribute.EndsWith("numeric"))
+        {
+            InputType = InputType.number;
+        }
+        else
+        {
+            InputType = InputType.text;
+        }
+        //var type = input.GetAttribute("type");
+        //if (type is not null)
+        //{
+        //    if (Enum.TryParse<InputType>(type, out var inputType))
+        //    {
+        //        InputType = inputType;
+        //    }
+        //    else
+        //    {
+        //        // TODO: log
+        //    }
+        //}
         //Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
 }

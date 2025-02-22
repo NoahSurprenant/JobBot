@@ -448,6 +448,8 @@ public class Service
                 {
                     Label = question.Label,
                     SingleLineValue = question.Input,
+                    QuestionPage = questionPage,
+                    InputType = question.InputType,
                 };
                 context.SingleLines.Add(singleLine);
             }
@@ -484,6 +486,7 @@ public class Service
                         Label = question.Label,
                         OptionValue = x
                     }).ToHashSet(),
+                    QuestionPage = questionPage,
                 };
                 context.ComboBoxes.Add(comboBox);
                 context.SaveChanges();
@@ -536,6 +539,7 @@ public class Service
                         Label = question.Label,
                         OptionValue = x
                     }).ToHashSet(),
+                    QuestionPage = questionPage,
                 };
                 context.Radios.Add(radio);
                 context.SaveChanges();
@@ -573,6 +577,8 @@ public class Service
                 {
                     Label = question.Label,
                     AutoLineValue = question.Input,
+                    QuestionPage = questionPage,
+                    InputType = question.InputType,
                 };
                 context.AutoLines.Add(auto);
             }

@@ -327,7 +327,18 @@ public class SingleLine
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
     public string? SingleLineValue { get; set; } = null!;
+    public InputType InputType { get; set; }
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+}
+
+public enum InputType
+{
+    text,
+    tel,
+    url,
+    number,
+    email,
+    password,
 }
 
 public class AutoLine
@@ -339,6 +350,7 @@ public class AutoLine
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
     public string? AutoLineValue { get; set; } = null!;
+    public InputType InputType { get; set; }
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
 }
 
