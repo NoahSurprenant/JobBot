@@ -41,12 +41,12 @@ export class QuestionsComponent {
   clicked(): void {
     this.loading.set(true);
 
-    this.http.get<QuestionDto[]>('api/questions')
+    this.http.get<PaginationResult<QuestionDto>>('api/questions')
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (x) => {
-          this.questions.set(x);
-          this.form = this.qcs.toFormGroup(this.toQuestionBase(x));
+          this.questions.set(x.results);
+          this.form = this.qcs.toFormGroup(this.toQuestionBase(x.results));
           this.toastService.show('Success');
         },
         error: () => {
@@ -74,4 +74,11 @@ export interface QuestionDto
   questionKind: 'AutoLine' | 'ComboBox' | 'Radio' | 'SingleLine',
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
+}
+
+
+export interface PaginationResult<T>
+{
+  totalCount: number,
+  results: T[],
 }

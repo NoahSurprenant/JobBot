@@ -1,4 +1,5 @@
 ﻿using JobBot.Database;
+using JobBot.Pagination;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,25 +31,22 @@ public class ApiController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<QuestionDto[]> Questions(CancellationToken ct)
+    public async Task<PaginationResult<QuestionDto>> Questions(CancellationToken ct)
     {
-        var autoLine = await _context.AutoLines
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.AutoLineValue, x.QuestionPage, QuestionKind.AutoLine, null, x.InputType))
-            .ToArrayAsync(ct);
+        var x = _context.AutoLines
+                .Select(x => new { Label = x.Label, Value = x.AutoLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
+            .Union(_context.ComboBoxes
+                .Select(x => new { Label = x.Label, Value = x.SelectedOptionValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null }))
+            .Union(_context.Radios
+                .Select(x => new { Label = x.Label, Value = x.SelectedOptionValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
+            .Union(_context.SingleLines
+                .Select(x => new { Label = x.Label, Value = x.SingleLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
+            .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionPage, x.QuestionKind,
+                x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() :
+                x.QuestionKind == QuestionKind.Radio ? _context.RadioOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() : null,
+                x.InputType));
 
-        var combo = await _context.ComboBoxes
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.ComboBox, x.ComboBoxOptions.Select(x => x.OptionValue).ToArray(), null))
-            .ToArrayAsync(ct);
-
-        var radio = await _context.Radios
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SelectedOptionValue, x.QuestionPage, QuestionKind.Radio, x.RadioOptions.Select(x => x.OptionValue).ToArray(), null))
-            .ToArrayAsync(ct);
-
-        var single = await _context.SingleLines
-            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.SingleLineValue, x.QuestionPage, QuestionKind.SingleLine, null, x.InputType))
-            .ToArrayAsync(ct);
-
-        return autoLine.Concat(combo).Concat(radio).Concat(single).ToArray();
+        return await x.PaginationResult(new PaginationFilter(1, 250), ct);
     }
 }
 
@@ -56,11 +54,22 @@ public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage
 
 //public class QuestionDto
 //{
-//    public required string Label { get; set; }
-//    public required string? Value { get; set; }
-//    public required QuestionPage QuestionPage { get; set; }
-//    public required QuestionKind QuestionKind { get; set; }
-//    public required string[]? Options { get; set; }
+//    public QuestionDto(string label, string? value, QuestionPage questionPage, QuestionKind questionKind, string[]? options, InputType? inputType)
+//    {
+//        Label = label;
+//        Value = value;
+//        QuestionPage = questionPage;
+//        QuestionKind = questionKind;
+//        Options = options;
+//        InputType = inputType;
+//    }
+
+//    public string Label { get; set; }
+//    public string? Value { get; set; }
+//    public QuestionPage QuestionPage { get; set; }
+//    public QuestionKind QuestionKind { get; set; }
+//    public string[]? Options { get; set; }
+//    public InputType? InputType { get; set; }
 //}
 
 public enum QuestionKind
