@@ -241,7 +241,7 @@ public class Service
                         dbRow.JobPostingComboBoxes = context
                             .JobPostingComboBoxes
                             .Include(x => x.ComboBox.ComboBoxOptions)
-                            .Include(x => x.ComboBox.SelectedComboBoxOption)
+                            .Include(x => x.ComboBox.ComboBoxOption)
                             .Where(x => x.JobPostingID == dbRow.JobPostingID)
                             .ToHashSet();
 
@@ -254,7 +254,7 @@ public class Service
                         dbRow.JobPostingRadios = context
                             .JobPostingRadios
                             .Include(x => x.Radio.RadioOptions)
-                            .Include(x => x.Radio.SelectedRadioOption)
+                            .Include(x => x.Radio.RadioOption)
                             .Where(x => x.JobPostingID == dbRow.JobPostingID)
                             .ToHashSet();
                     }
@@ -447,7 +447,7 @@ public class Service
                 singleLine = new SingleLine()
                 {
                     Label = question.Label,
-                    SingleLineValue = question.Input,
+                    Value = question.Input,
                     QuestionPage = questionPage,
                     InputType = question.InputType,
                 };
@@ -472,7 +472,7 @@ public class Service
         foreach (var question in questions.Combos)
         {
             var comboBox = context.ComboBoxes
-                .Include(x => x.SelectedComboBoxOption!.ComboBox)
+                .Include(x => x.ComboBoxOption!.ComboBox)
                 .Include(x => x.ComboBoxOptions)
                 .FirstOrDefault(x => x.Label == question.Label);
             if (comboBox is null)
@@ -484,7 +484,7 @@ public class Service
                     ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
                     {
                         Label = question.Label,
-                        OptionValue = x
+                        Value = x
                     }).ToHashSet(),
                     QuestionPage = questionPage,
                 };
@@ -493,7 +493,7 @@ public class Service
                 // Possible circular reference requires these to be seperate writes
                 if (question.Input is not null && question.Input is not "Select an option")
                 {
-                    comboBox.SelectedOptionValue = question.Input;
+                    comboBox.Value = question.Input;
                     context.SaveChanges();
                 }
                 else if (question.Input is not null)
@@ -525,7 +525,7 @@ public class Service
         foreach (var question in questions.Radios)
         {
             var radio = context.Radios
-                .Include(x => x.SelectedRadioOption!.Radio)
+                .Include(x => x.RadioOption!.Radio)
                 .Include(x => x.RadioOptions)
                 .FirstOrDefault(x => x.Label == question.Label);
             if (radio is null)
@@ -537,7 +537,7 @@ public class Service
                     RadioOptions = question.Options.Select(x => new RadioOption()
                     {
                         Label = question.Label,
-                        OptionValue = x
+                        Value = x
                     }).ToHashSet(),
                     QuestionPage = questionPage,
                 };
@@ -546,7 +546,7 @@ public class Service
                 // Possible circular reference requires these to be seperate writes
                 if (question.Input is not null)
                 {
-                    radio.SelectedOptionValue = question.Input;
+                    radio.Value = question.Input;
                     context.SaveChanges();
                 }
 
@@ -576,7 +576,7 @@ public class Service
                 auto = new AutoLine()
                 {
                     Label = question.Label,
-                    AutoLineValue = question.Input,
+                    Value = question.Input,
                     QuestionPage = questionPage,
                     InputType = question.InputType,
                 };

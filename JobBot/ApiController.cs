@@ -31,19 +31,28 @@ public class ApiController : ControllerBase
     }
 
     [HttpGet]
+    public async Task<PaginationResult<JobDto>> Jobs([FromQuery] PaginationFilter filter, CancellationToken ct)
+    {
+        var x = _context.JobPostings
+                .Select(x => new JobDto(x.JobPostingID, x.CompanyName, x.CompanyLink, x.JobTitle, x.Location, x.OfficeKind, x.SalaryMin, x.SalaryMax, x.NoApplyReason));
+
+        return await x.PaginationResult(filter, ct);
+    }
+
+    [HttpGet]
     public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter, CancellationToken ct)
     {
         var x = _context.AutoLines
-                .Select(x => new { Label = x.Label, Value = x.AutoLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
             .Union(_context.ComboBoxes
-                .Select(x => new { Label = x.Label, Value = x.SelectedOptionValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null }))
             .Union(_context.Radios
-                .Select(x => new { Label = x.Label, Value = x.SelectedOptionValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
             .Union(_context.SingleLines
-                .Select(x => new { Label = x.Label, Value = x.SingleLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
             .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionPage, x.QuestionKind,
-                x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() :
-                x.QuestionKind == QuestionKind.Radio ? _context.RadioOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() : null,
+                x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.Value).ToArray() :
+                x.QuestionKind == QuestionKind.Radio ? _context.RadioOptions.Where(o => o.Label == x.Label).Select(o => o.Value).ToArray() : null,
                 x.InputType));
 
         return await x.PaginationResult(filter, ct);
@@ -70,7 +79,7 @@ public class ApiController : ControllerBase
     {
         var db = await _context.SingleLines.FirstOrDefaultAsync(x => x.Label == question.Label, ct)
             ?? throw new Exception($"Could not find single line: {question.Label}");
-        db.SingleLineValue = question.Value;
+        db.Value = question.Value;
         await _context.SaveChangesAsync(ct);
     }
 
@@ -85,9 +94,9 @@ public class ApiController : ControllerBase
             .Include(x => x.RadioOptions)
             .FirstOrDefaultAsync(x => x.Label == question.Label, ct)
             ?? throw new Exception($"Could not find radio: {question.Label}");
-        if (db.RadioOptions.Any(x => x.OptionValue == question.Value) is false)
+        if (db.RadioOptions.Any(x => x.Value == question.Value) is false)
             throw new Exception($"{question.Value} is not a valid value for radio {db.Label}");
-        db.SelectedOptionValue = question.Value;
+        db.Value = question.Value;
         await _context.SaveChangesAsync(ct);
     }
 
@@ -97,12 +106,14 @@ public class ApiController : ControllerBase
             .Include(x => x.ComboBoxOptions)
             .FirstOrDefaultAsync(x => x.Label == question.Label, ct)
             ?? throw new Exception($"Could not find combo box: {question.Label}");
-        if (db.ComboBoxOptions.Any(x => x.OptionValue == question.Value) is false)
+        if (db.ComboBoxOptions.Any(x => x.Value == question.Value) is false)
             throw new Exception($"{question.Value} is not a valid value for combo box {db.Label}");
-        db.SelectedOptionValue = question.Value;
+        db.Value = question.Value;
         await _context.SaveChangesAsync(ct);
     }
 }
+
+public record JobDto(long jobID, string CompanyName, string? CompanyLink, string JobTitle, string Location, OfficeKind OfficeKind, decimal? SalaryMin, decimal? SalaryMax, string? NoApplyReason);
 
 public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options, InputType? InputType);
 

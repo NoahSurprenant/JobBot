@@ -1,14 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, OnInit, resource, signal } from '@angular/core';
 import { ToastService } from '../toast.service';
-import { ButtonComponent } from '../button/button.component';
-import { InputComponent } from '../input/input.component';
+import { ButtonComponent } from '../shared/button/button.component';
+import { InputComponent } from '../shared/input/input.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { QuestionBase, QuestionControlService } from '../questionControl.service';
-import { DropdownComponent } from '../dropdown/dropdown.component';
+import { DropdownComponent } from '../shared/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
-import { PaginatorComponent } from '../paginator/paginator.component';
 import { finalize } from 'rxjs';
+import { PaginationResult } from '../paginationResult';
+import { PaginatorComponent } from '../shared/paginator/paginator.component';
 
 @Component({
   selector: 'app-questions',
@@ -133,11 +134,4 @@ export interface QuestionDto
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
   guid: string,
-}
-
-
-export interface PaginationResult<T>
-{
-  totalCount: number,
-  results: T[],
 }

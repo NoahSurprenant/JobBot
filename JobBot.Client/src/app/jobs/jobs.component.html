@@ -1,0 +1,49 @@
+<div class="space-x-4 place-self-center mt-2">
+    <x-button [disabled]="x.isLoading()" (clicked)="clicked()">Refresh</x-button>
+</div>
+
+<div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_1fr)] mx-4">
+    <div class="font-bold flex items-center py-1.5">JobID</div>
+    <div class="font-bold flex items-center py-1.5">CompanyName</div>
+    <div class="font-bold flex items-center py-1.5">JobTitle</div>
+    <div class="font-bold flex items-center py-1.5">Location</div>
+    <div class="font-bold flex items-center py-1.5">Salary</div>
+    <div class="font-bold flex items-center py-1.5">No Apply Reason</div>
+@for (job of current().results; track job.jobID) {
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    {{job.jobID}}
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    @if (job.companyLink) {
+        <a [href]="'https://www.linkedin.com/company/'+job.companyLink">{{job.companyName}}</a>
+    } @else {
+        {{job.companyName}}
+    }
+    
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    {{job.jobTitle}}
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    {{job.location}} - {{job.officeKind}}
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    @if (job.salaryMin) {
+        {{job.salaryMin}} - {{job.salaryMax}}
+    } @else {
+        Not Provided
+    }
+    
+</div>
+
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
+    {{job.noApplyReason}}
+</div>
+}
+</div>
+
+<x-paginator [paginationResult]="current()" class="mt-2 place-self-center" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>

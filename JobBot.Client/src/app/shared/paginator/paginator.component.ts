@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, model } from '@angular/core';
-import { DropdownComponent } from '../dropdown/dropdown.component';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent } from "../button/button.component";
-import { PaginationResult } from '../questions/questions.component';
+import { PaginationResult } from '../../paginationResult';
+import { ButtonComponent } from '../button/button.component';
+import { DropdownComponent } from '../dropdown/dropdown.component';
 
 @Component({
   selector: 'x-paginator',

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, Signal, signal } from '@angular/core';
-import { InputComponent } from '../input/input.component';
+import { InputComponent } from '../shared/input/input.component';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonComponent } from '../button/button.component';
+import { ButtonComponent } from '../shared/button/button.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { finalize } from 'rxjs';

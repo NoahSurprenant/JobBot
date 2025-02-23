@@ -152,15 +152,15 @@ public class RadioOptionConfiguration : IEntityTypeConfiguration<RadioOption>
     {
         entity.ToTable("RadioOptions");
 
-        entity.HasKey(e => new { e.OptionValue, e.Label });
+        entity.HasKey(e => new { e.Value, e.Label });
 
         entity.HasOne(x => x.Radio)
             .WithMany(x => x.RadioOptions)
             .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.SelectedRadio)
-            .WithOne(x => x.SelectedRadioOption)
-            .HasForeignKey<Radio>(x => new { x.SelectedOptionValue, x.Label })
+            .WithOne(x => x.RadioOption)
+            .HasForeignKey<Radio>(x => new { x.Value, x.Label })
             .IsRequired(false);
     }
 }
@@ -184,15 +184,15 @@ public class ComboBoxOptionConfiguration : IEntityTypeConfiguration<ComboBoxOpti
     {
         entity.ToTable("ComboBoxOptions");
 
-        entity.HasKey(e => new { e.OptionValue, e.Label });
+        entity.HasKey(e => new { e.Value, e.Label });
 
         entity.HasOne(x => x.ComboBox)
             .WithMany(x => x.ComboBoxOptions)
             .HasForeignKey(x => x.Label);
 
         entity.HasOne(x => x.SelectedComboBox)
-            .WithOne(x => x.SelectedComboBoxOption)
-            .HasForeignKey<ComboBox>(x => new { x.SelectedOptionValue, x.Label })
+            .WithOne(x => x.ComboBoxOption)
+            .HasForeignKey<ComboBox>(x => new { x.Value, x.Label })
             .IsRequired(false);
     }
 }
@@ -281,8 +281,8 @@ public class Radio
     }
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
-    public string? SelectedOptionValue { get; set; }
-    public RadioOption? SelectedRadioOption { get; set; }
+    public string? Value { get; set; }
+    public RadioOption? RadioOption { get; set; }
     public HashSet<JobPostingRadio> JobPostingRadios { get; set; }
     public HashSet<RadioOption> RadioOptions { get; set; }
 }
@@ -290,7 +290,7 @@ public class Radio
 public class RadioOption
 {
     public string Label { get; set; } = null!;
-    public string OptionValue { get; set; } = null!;
+    public string Value { get; set; } = null!;
     public Radio Radio { get; set; } = null!;
     public Radio? SelectedRadio { get; set; }
 }
@@ -304,8 +304,8 @@ public class ComboBox
     }
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
-    public string? SelectedOptionValue { get; set; }
-    public ComboBoxOption? SelectedComboBoxOption { get; set; }
+    public string? Value { get; set; }
+    public ComboBoxOption? ComboBoxOption { get; set; }
     public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
     public HashSet<ComboBoxOption> ComboBoxOptions { get; set; }
 }
@@ -313,7 +313,7 @@ public class ComboBox
 public class ComboBoxOption
 {
     public string Label { get; set; } = null!;
-    public string OptionValue { get; set; } = null!;
+    public string Value { get; set; } = null!;
     public ComboBox ComboBox { get; set; } = null!;
     public ComboBox? SelectedComboBox { get; set; }
 }
@@ -326,7 +326,7 @@ public class SingleLine
     }
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
-    public string? SingleLineValue { get; set; } = null!;
+    public string? Value { get; set; } = null!;
     public InputType InputType { get; set; }
     public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
 }
@@ -349,7 +349,7 @@ public class AutoLine
     }
     public string Label { get; set; } = null!;
     public QuestionPage QuestionPage { get; set; }
-    public string? AutoLineValue { get; set; } = null!;
+    public string? Value { get; set; } = null!;
     public InputType InputType { get; set; }
     public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
 }
