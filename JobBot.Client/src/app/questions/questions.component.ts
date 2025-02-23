@@ -1,15 +1,13 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, computed, OnInit, resource, signal } from '@angular/core';
 import { ToastService } from '../toast.service';
-import { combineLatest, distinctUntilChanged, finalize, Observable, switchMap, tap } from 'rxjs';
 import { ButtonComponent } from '../button/button.component';
 import { InputComponent } from '../input/input.component';
-import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { QuestionBase, QuestionControlService } from '../questionControl.service';
 import { DropdownComponent } from '../dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
 import { PaginatorComponent } from '../paginator/paginator.component';
-import { toObservable } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-questions',
@@ -27,11 +25,6 @@ import { toObservable } from '@angular/core/rxjs-interop';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestionsComponent implements OnInit {
-  loading = signal<boolean>(false);
-  pr = signal<PaginationResult<QuestionDto>>({ totalCount: 0, results: []});
-  questions = signal<QuestionDto[]>([]);
-  form!: FormGroup;
-
   constructor(private http: HttpClient, private toastService: ToastService, private qcs: QuestionControlService) {
   }
 
@@ -39,47 +32,12 @@ export class QuestionsComponent implements OnInit {
     return i % 2 == 0;
   }
 
-  isOdd(i: number) {
-    return !this.isEven(i);
-  }
-
   ngOnInit(): void {
-    combineLatest({pageSize: this.pageSize$.pipe(distinctUntilChanged()), pageNumber: this.pageNumber$.pipe(distinctUntilChanged())})
-      .pipe(
-        distinctUntilChanged(),
-        switchMap((x) => this.load(x.pageSize, x.pageNumber))
-      )
-      .subscribe();
+    this.x.reload();
   }
 
   clicked(): void {
-    this.load(this.pageSize(), this.pageNumber()).subscribe();
-  }
-
-  load(pageSize: number, pageNumber: number): Observable<PaginationResult<QuestionDto>> {
-    this.loading.set(true);
-
-    let params = new HttpParams().set('pageSize', pageSize).set('pageNumber', pageNumber);
-
-    return this.http.get<PaginationResult<QuestionDto>>('api/questions', {params: params})
-      .pipe(finalize(() => this.loading.set(false)))
-      .pipe(tap((x) => {
-        this.pr.set(x);
-          this.questions.set(x.results);
-          this.form = this.qcs.toFormGroup(this.toQuestionBase(x.results));
-          this.toastService.show('Success');
-      }));
-      // .subscribe({
-      //   next: (x) => {
-      //     this.pr.set(x);
-      //     this.questions.set(x.results);
-      //     this.form = this.qcs.toFormGroup(this.toQuestionBase(x.results));
-      //     this.toastService.show('Success');
-      //   },
-      //   error: () => {
-      //     this.toastService.show('Error');
-      //   },
-      // })
+    this.x.reload();
   }
 
   toQuestionBase(x: QuestionDto[]): QuestionBase<string>[] {
@@ -94,8 +52,24 @@ export class QuestionsComponent implements OnInit {
 
   pageSize = signal(10);
   pageNumber = signal(1);
-  pageSize$ = toObservable(this.pageSize);
-  pageNumber$ = toObservable(this.pageNumber);
+
+  x = resource({
+    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber() }),
+    loader: async ({request}) => {
+      const params = new URLSearchParams();
+      params.set('pageSize', request.pageSize.toString());
+      params.set('pageNumber', request.pageNumber.toString());
+      return fetch(`api/questions?${params}&foo=foo`).then(x => x.json() as Promise<PaginationResult<QuestionDto>>);
+    },
+  });
+
+  pr = computed(() => {
+    return this.x.value() ?? { totalCount: 0, results: []};
+  });
+
+  form = computed(() => {
+    return this.qcs.toFormGroup(this.toQuestionBase(this.pr().results));
+  });
 }
 
 export interface QuestionDto

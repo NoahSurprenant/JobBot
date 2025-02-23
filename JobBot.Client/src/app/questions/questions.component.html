@@ -1,14 +1,13 @@
 
-<x-button [disabled]="loading()" (clicked)="clicked()">Refresh</x-button>
+<x-button [disabled]="x.isLoading()" (clicked)="clicked()">Refresh</x-button>
 
-@if (!loading() && questions().length > 0) {
-<form [formGroup]="form">
+<form [formGroup]="form()">
 <div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)]">
     <div class="font-bold flex items-center py-1.5">Label</div>
     <div class="font-bold flex items-center py-1.5">Value</div>
     <div class="font-bold flex items-center py-1.5">Question Page</div>
     <div class="font-bold flex items-center py-1.5">Question Kind</div>
-@for (question of questions(); track $index) {
+@for (question of pr().results; track question.label) {
 <div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
     {{question.label}}
 </div>
@@ -17,7 +16,6 @@
     @switch (question.questionKind) {
         @case ('AutoLine') {
             {{question.value}}
-            <!-- <x-input [formControlName]="question.label" [type]="question.inputType!"></x-input> -->
         }
         @case ('ComboBox') {
             <x-dropdown [formControlName]="question.label" [options]="question.options!"></x-dropdown>
@@ -42,7 +40,5 @@
 }
 </div>
 </form>
-
-}
 
 <x-paginator [paginationResult]="pr()" class="mt-2" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>
