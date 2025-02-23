@@ -7,12 +7,12 @@
     <div class="font-bold flex items-center py-1.5">Value</div>
     <div class="font-bold flex items-center py-1.5">Question Page</div>
     <div class="font-bold flex items-center py-1.5">Question Kind</div>
-@for (question of pr().results; track question.label) {
-<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+@for (question of current().results; track question.label) {
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     {{question.label}}
 </div>
 
-<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     @switch (question.questionKind) {
         @case ('AutoLine') {
             {{question.value}}
@@ -31,14 +31,14 @@
         }
     }
 </div>
-<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     {{question.questionPage}}
 </div>
-<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5">
+<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     {{question.questionKind}}
 </div>
 }
 </div>
 </form>
 
-<x-paginator [paginationResult]="pr()" class="mt-2" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>
+<x-paginator [paginationResult]="current()" class="mt-2" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>

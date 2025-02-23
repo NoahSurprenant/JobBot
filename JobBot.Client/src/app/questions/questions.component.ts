@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, OnInit, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, OnInit, resource, signal } from '@angular/core';
 import { ToastService } from '../toast.service';
 import { ButtonComponent } from '../button/button.component';
 import { InputComponent } from '../input/input.component';
@@ -26,6 +26,11 @@ import { PaginatorComponent } from '../paginator/paginator.component';
 })
 export class QuestionsComponent implements OnInit {
   constructor(private http: HttpClient, private toastService: ToastService, private qcs: QuestionControlService) {
+    effect(() => {
+      const x = this.x.value();
+      if (x)
+        this.current.set(x);
+    })
   }
 
   isEven(i: number) {
@@ -59,17 +64,15 @@ export class QuestionsComponent implements OnInit {
       const params = new URLSearchParams();
       params.set('pageSize', request.pageSize.toString());
       params.set('pageNumber', request.pageNumber.toString());
-      return fetch(`api/questions?${params}&foo=foo`).then(x => x.json() as Promise<PaginationResult<QuestionDto>>);
+      return await fetch(`api/questions?${params}`).then(x => x.json() as Promise<PaginationResult<QuestionDto>>);
     },
   });
 
-  pr = computed(() => {
-    return this.x.value() ?? { totalCount: 0, results: []};
+  form = computed(() => {
+    return this.qcs.toFormGroup(this.toQuestionBase(this.current().results));
   });
 
-  form = computed(() => {
-    return this.qcs.toFormGroup(this.toQuestionBase(this.pr().results));
-  });
+  current = signal<PaginationResult<QuestionDto>>({ totalCount: 0, results: []});
 }
 
 export interface QuestionDto
