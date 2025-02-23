@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 
 //https://angular.dev/guide/forms/dynamic-forms
 @Injectable({
   providedIn: 'root'
 })
 export class QuestionControlService {
+  constructor(private fb: FormBuilder) {}
   toFormGroup(questions: QuestionBase<string>[]) {
     const group: any = {};
     questions.forEach((question) => {
-      group[question.key] = new FormControl(question.value || '');
+      group[question.key] = this.fb.control<string | null>(question.value ?? null, { nonNullable: true });
     });
     return new FormGroup(group);
   }
