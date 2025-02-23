@@ -1,5 +1,5 @@
 
-<x-button [disabled]="loading()" (clicked)="clicked()">Load</x-button>
+<x-button [disabled]="loading()" (clicked)="clicked()">Refresh</x-button>
 
 @if (!loading() && questions().length > 0) {
 <form [formGroup]="form">
@@ -42,4 +42,7 @@
 }
 </div>
 </form>
+
 }
+
+<x-paginator [paginationResult]="pr()" class="mt-2" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>

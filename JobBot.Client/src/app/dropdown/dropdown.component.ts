@@ -17,9 +17,9 @@ import { ControlValueAccessor, FormControl, FormControlDirective, FormControlNam
       }
     ]
 })
-export class DropdownComponent implements ControlValueAccessor, OnInit {
+export class DropdownComponent<T> implements ControlValueAccessor, OnInit {
   displayErrors = input<boolean>(true);
-  options = input.required<string[]>();
+  options = input.required<T[]>();
   public control!: FormControl;
   
   constructor(@Inject(Injector) private injector: Injector) {

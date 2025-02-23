@@ -31,7 +31,7 @@ public class ApiController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<PaginationResult<QuestionDto>> Questions(CancellationToken ct)
+    public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter, CancellationToken ct)
     {
         var x = _context.AutoLines
                 .Select(x => new { Label = x.Label, Value = x.AutoLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
@@ -41,12 +41,12 @@ public class ApiController : ControllerBase
                 .Select(x => new { Label = x.Label, Value = x.SelectedOptionValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
             .Union(_context.SingleLines
                 .Select(x => new { Label = x.Label, Value = x.SingleLineValue, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
-            .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionPage, x.QuestionKind,
+            .Select(x => new QuestionDto(x.Label.Replace(".", ""), x.Value, x.QuestionPage, x.QuestionKind,
                 x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() :
                 x.QuestionKind == QuestionKind.Radio ? _context.RadioOptions.Where(o => o.Label == x.Label).Select(o => o.OptionValue).ToArray() : null,
                 x.InputType));
 
-        return await x.PaginationResult(new PaginationFilter(1, 250), ct);
+        return await x.PaginationResult(filter, ct);
     }
 }
 
