@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, OnInit, resource,
 import { ToastService } from '../toast.service';
 import { ButtonComponent } from '../shared/button/button.component';
 import { InputComponent } from '../shared/input/input.component';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { QuestionBase, QuestionControlService } from '../questionControl.service';
 import { DropdownComponent } from '../shared/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
@@ -41,7 +41,32 @@ export class QuestionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.x.reload();
+
+    this.valueControl.valueChanges.subscribe({
+      next: (x) => {
+        this.questionFilter.update(x => {
+          if (x.value != null) {
+            x.value.value = this.valueControl.value;
+          }
+          return {...x};
+        });
+      },
+    });
   }
+
+  questionFilter = signal<QuestionFilter>({value: null});
+
+  toggleValueFilter() {
+    this.questionFilter.update(x => {
+      if (x.value == null)
+        x.value = { value: this.valueControl.value };
+      else 
+        x.value = null;
+      return {...x};
+    });
+  }
+
+  valueControl: FormControl<string | null> = new FormControl(null);
 
   clicked(): void {
     this.x.reload();
@@ -95,12 +120,18 @@ export class QuestionsComponent implements OnInit {
   pageNumber = signal(1);
 
   x = resource({
-    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber() }),
+    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber(), questionFilter: this.questionFilter() }),
     loader: async ({request}) => {
       const params = new URLSearchParams();
       params.set('pageSize', request.pageSize.toString());
       params.set('pageNumber', request.pageNumber.toString());
-      return await fetch(`api/questions?${params}`)
+      return await fetch(`api/questions?${params}`, {
+          method: 'POST',
+          body: JSON.stringify(request.questionFilter),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
         .then(x => x.json() as Promise<PaginationResult<QuestionDto>>)
         .then(x => {
           x.results.forEach(x => x.guid = this.uuidv4());
@@ -134,4 +165,12 @@ export interface QuestionDto
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
   guid: string,
+}
+
+export interface QuestionFilter {
+  value: PropertyFilter | null,
+}
+
+export interface PropertyFilter {
+  value: string | null,
 }

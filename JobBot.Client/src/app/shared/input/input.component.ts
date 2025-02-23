@@ -22,6 +22,7 @@ export class InputComponent implements ControlValueAccessor, OnInit {
   placeholder = input<string>('');
   required = input<boolean>(false);
   displayErrors = input<boolean>(true);
+  convertEmptyToNull = input<boolean>(true);
 
   public control!: FormControl;
 
@@ -56,6 +57,13 @@ export class InputComponent implements ControlValueAccessor, OnInit {
         break;
       }
     }
+
+    this.control.events.subscribe({
+      next: (x) => {
+        if (this.convertEmptyToNull() && x.source.value === '')
+          this.control.patchValue(null, { emitEvent: false });
+      },
+    })
   }
   
   writeValue(obj: any): void {

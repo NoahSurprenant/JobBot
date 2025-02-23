@@ -17,7 +17,7 @@ import { ControlValueAccessor, FormControl, FormControlDirective, FormControlNam
       }
     ]
 })
-export class DropdownComponent<T> implements ControlValueAccessor, OnInit {
+export class DropdownComponent<T extends string | number> implements ControlValueAccessor, OnInit {
   displayErrors = input<boolean>(true);
   options = input.required<T[]>();
   public control!: FormControl;

@@ -39,16 +39,29 @@ public class ApiController : ControllerBase
         return await x.PaginationResult(filter, ct);
     }
 
-    [HttpGet]
-    public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter, CancellationToken ct)
+    [HttpPost]
+    public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter, [FromBody] QuestionFilter questionFilter, CancellationToken ct)
     {
-        var x = _context.AutoLines
+        var q1 = _context.AutoLines.AsQueryable();
+        var q2 = _context.ComboBoxes.AsQueryable();
+        var q3 = _context.Radios.AsQueryable();
+        var q4 = _context.SingleLines.AsQueryable();
+
+        if (questionFilter.Value is not null)
+        {
+            q1 = q1.Where(x => x.Value == questionFilter.Value.Value);
+            q2 = q2.Where(x => x.Value == questionFilter.Value.Value);
+            q3 = q3.Where(x => x.Value == questionFilter.Value.Value);
+            q4 = q4.Where(x => x.Value == questionFilter.Value.Value);
+        }
+
+        var x = q1
                 .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
-            .Union(_context.ComboBoxes
+            .Union(q2
                 .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null }))
-            .Union(_context.Radios
+            .Union(q3
                 .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
-            .Union(_context.SingleLines
+            .Union(q4
                 .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
             .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionPage, x.QuestionKind,
                 x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.Value).ToArray() :
@@ -143,4 +156,13 @@ public enum QuestionKind
     ComboBox,
     Radio,
     SingleLine,
+}
+
+public class QuestionFilter
+{
+    public PropertyFilter? Value { get; set; }
+}
+public class PropertyFilter
+{
+    public string? Value { get; set; }
 }
