@@ -30,13 +30,26 @@ public class ApiController : ControllerBase
         await _service.ExecuteAsync(job, location, ct);
     }
 
-    [HttpGet]
-    public async Task<PaginationResult<JobDto>> Jobs([FromQuery] PaginationFilter filter, CancellationToken ct)
+    [HttpPost]
+    public async Task<PaginationResult<JobDto>> Jobs([FromQuery] PaginationFilter filter, [FromBody] JobFilter jobFilter, CancellationToken ct)
     {
-        var x = _context.JobPostings
-                .Select(x => new JobDto(x.JobPostingID, x.CompanyName, x.CompanyLink, x.JobTitle, x.Location, x.OfficeKind, x.SalaryMin, x.SalaryMax, x.NoApplyReason));
+        var x = _context.JobPostings.AsQueryable();
 
-        return await x.PaginationResult(filter, ct);
+        if (jobFilter.QuestionKind is not null && jobFilter.Label is not null)
+        {
+            x = jobFilter.QuestionKind switch
+            {
+                QuestionKind.SingleLine => x.Where(x => x.JobPostingSingleLines.Any(x => x.Label == jobFilter.Label)),
+                QuestionKind.AutoLine => x.Where(x => x.JobPostingAutoLines.Any(x => x.Label == jobFilter.Label)),
+                QuestionKind.Radio => x.Where(x => x.JobPostingRadios.Any(x => x.Label == jobFilter.Label)),
+                QuestionKind.ComboBox => x.Where(x => x.JobPostingComboBoxes.Any(x => x.Label == jobFilter.Label)),
+                _ => throw new ArgumentOutOfRangeException(nameof(jobFilter.QuestionKind), jobFilter.QuestionKind, "QuestionKind out of range"),
+            };
+        }
+
+        var final = x.Select(x => new JobDto(x.JobPostingID, x.CompanyName, x.CompanyLink, x.JobTitle, x.Location, x.OfficeKind, x.SalaryMin, x.SalaryMax, x.NoApplyReason));
+
+        return await final.PaginationResult(filter, ct);
     }
 
     [HttpPost]
@@ -56,17 +69,17 @@ public class ApiController : ControllerBase
         }
 
         var x = q1
-                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType })
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.AutoLine, Options = (string[]?)null, InputType = (InputType?)x.InputType, x.JobPostingAutoLines.Count })
             .Union(q2
-                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.ComboBox, Options = (string[]?)null, InputType = (InputType?)null, x.JobPostingComboBoxes.Count }))
             .Union(q3
-                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.Radio, Options = (string[]?)null, InputType = (InputType?)null, x.JobPostingRadios.Count }))
             .Union(q4
-                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType }))
+                .Select(x => new { Label = x.Label, Value = x.Value, QuestionPage = x.QuestionPage, QuestionKind = QuestionKind.SingleLine, Options = (string[]?)null, InputType = (InputType?)x.InputType, x.JobPostingSingleLines.Count }))
             .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionPage, x.QuestionKind,
                 x.QuestionKind == QuestionKind.ComboBox ? _context.ComboBoxOptions.Where(o => o.Label == x.Label).Select(o => o.Value).ToArray() :
                 x.QuestionKind == QuestionKind.Radio ? _context.RadioOptions.Where(o => o.Label == x.Label).Select(o => o.Value).ToArray() : null,
-                x.InputType));
+                x.InputType, x.Count));
 
         return await x.PaginationResult(filter, ct);
     }
@@ -128,7 +141,7 @@ public class ApiController : ControllerBase
 
 public record JobDto(long jobID, string CompanyName, string? CompanyLink, string JobTitle, string Location, OfficeKind OfficeKind, decimal? SalaryMin, decimal? SalaryMax, string? NoApplyReason);
 
-public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options, InputType? InputType);
+public record QuestionDto(string Label, string? Value, QuestionPage QuestionPage, QuestionKind QuestionKind, string[]? Options, InputType? InputType, int AttachedJobs);
 
 //public class QuestionDto
 //{
@@ -165,4 +178,10 @@ public class QuestionFilter
 public class PropertyFilter
 {
     public string? Value { get; set; }
+}
+
+public class JobFilter
+{
+    public string? Label { get; set; }
+    public QuestionKind? QuestionKind { get; set; }
 }

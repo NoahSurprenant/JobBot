@@ -3,6 +3,11 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
     {
         path: '',
+        redirectTo: '/apply',
+        pathMatch: 'full'
+    },
+    {
+        path: 'apply',
         loadComponent: () => import('./apply/apply.component').then(c => c.ApplyComponent),
         title: 'Apply',
     },

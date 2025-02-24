@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { PaginationResult } from '../paginationResult';
 import { PaginatorComponent } from '../shared/paginator/paginator.component';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-questions',
@@ -21,6 +22,7 @@ import { PaginatorComponent } from '../shared/paginator/paginator.component';
     FormsModule,
     ReactiveFormsModule,
     PaginatorComponent,
+    RouterModule,
   ],
   templateUrl: './questions.component.html',
   styleUrl: './questions.component.scss',
@@ -164,6 +166,7 @@ export interface QuestionDto
   questionKind: 'AutoLine' | 'ComboBox' | 'Radio' | 'SingleLine',
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
+  attachedJobs: number,
   guid: string,
 }
 

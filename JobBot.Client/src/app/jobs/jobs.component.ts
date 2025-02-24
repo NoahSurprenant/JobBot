@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, OnInit, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, OnInit, resource, signal } from '@angular/core';
 import { ButtonComponent } from '../shared/button/button.component';
 import { CommonModule } from '@angular/common';
 import { PaginationResult } from '../paginationResult';
@@ -16,6 +16,9 @@ import { PaginatorComponent } from '../shared/paginator/paginator.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class JobsComponent implements OnInit {
+  label = input<string | null>(null);
+  questionKind = input<'AutoLine' | 'ComboBox' | 'Radio' | 'SingleLine' | null>(null);
+  
   constructor() {
     effect(() => {
       const x = this.x.value();
@@ -40,12 +43,21 @@ export class JobsComponent implements OnInit {
   pageNumber = signal(1);
 
   x = resource({
-    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber() }),
+    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber(), label: this.label(), questionKind: this.questionKind() }),
     loader: async ({request}) => {
       const params = new URLSearchParams();
       params.set('pageSize', request.pageSize.toString());
       params.set('pageNumber', request.pageNumber.toString());
-      return await fetch(`api/jobs?${params}`)
+      return await fetch(`api/jobs?${params}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          label: request.label,
+          questionKind: request.questionKind,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
         .then(x => x.json() as Promise<PaginationResult<JobDto>>);
     },
   });
