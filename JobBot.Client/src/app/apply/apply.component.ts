@@ -24,8 +24,10 @@ export class ApplyComponent {
 
   constructor(private fb: FormBuilder, private http: HttpClient, private toastService: ToastService) {
     this.form = this.fb.group<MyFormGroup>({
-      job: this.fb.control<string>('.net developer', Validators.required),
-      location: this.fb.control<string>('Detroit Metropolitan Area', Validators.required),
+      job: this.fb.control<string>('.net developer', {nonNullable: true, validators: Validators.required}),
+      location: this.fb.control<string>('Detroit Metropolitan Area', {nonNullable: true, validators: Validators.required}),
+      maxApplyCount: this.fb.control<number>(100, {nonNullable: true, validators: Validators.required}),
+      maxReadCount: this.fb.control<number>(250, {nonNullable: true, validators: Validators.required}),
     });
     this.valueChanges = toSignal(this.form.valueChanges);
   }
@@ -35,7 +37,9 @@ export class ApplyComponent {
 
     let params = new HttpParams()
       .set('job', this.form.value.job!)
-      .set('location', this.form.value.location!);
+      .set('location', this.form.value.location!)
+      .set('maxApplyCount', this.form.value.maxApplyCount!)
+      .set('maxReadCount', this.form.value.maxReadCount!);
 
     this.http.get('api/execute', { params: params })
       .pipe(finalize(() => this.submitting.set(false)))
@@ -61,11 +65,15 @@ export class ApplyComponent {
 }
 
 export interface MyFormGroup {
-  job: FormControl<string | null>,
-  location: FormControl<string | null>,
+  job: FormControl<string>,
+  location: FormControl<string>,
+  maxApplyCount: FormControl<number>,
+  maxReadCount: FormControl<number>,
 }
 
 export interface MyForm {
-  job: string | null,
-  location: string | null,
+  job: string,
+  location: string,
+  maxApplyCount: number,
+  maxReadCount: number,
 }

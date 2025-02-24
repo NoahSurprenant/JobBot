@@ -23,11 +23,13 @@ public class ApiController : ControllerBase
     /// </summary>
     /// <param name="job">Job to search for</param>
     /// <param name="location">Location to search for</param>
+    /// <param name="maxApplyCount">The maximum number of jobs to apply to</param>
+    /// <param name="maxReadCount">The maximum number of jobs to read</param>
     /// <returns>Task</returns>
     [HttpGet]
-    public async Task Execute(string job, string location, CancellationToken ct)
+    public async Task Execute(string job, string location, int maxApplyCount, int maxReadCount, CancellationToken ct)
     {
-        await _service.ExecuteAsync(job, location, ct);
+        await _service.ExecuteAsync(job, location, maxApplyCount, maxReadCount, ct);
     }
 
     [HttpPost]
@@ -47,7 +49,12 @@ public class ApiController : ControllerBase
             };
         }
 
-        var final = x.Select(x => new JobDto(x.JobPostingID, x.CompanyName, x.CompanyLink, x.JobTitle, x.Location, x.OfficeKind, x.SalaryMin, x.SalaryMax, x.NoApplyReason));
+        if (jobFilter.Applied is not null)
+        {
+            x = x.Where(x => x.Applied == jobFilter.Applied);
+        }
+
+        var final = x.OrderByDescending(x => x.LastDatePulled).Select(x => new JobDto(x.JobPostingID, x.CompanyName, x.CompanyLink, x.JobTitle, x.Location, x.OfficeKind, x.SalaryMin, x.SalaryMax, x.NoApplyReason));
 
         return await final.PaginationResult(filter, ct);
     }
@@ -184,4 +191,5 @@ public class JobFilter
 {
     public string? Label { get; set; }
     public QuestionKind? QuestionKind { get; set; }
+    public bool? Applied { get; set; }
 }

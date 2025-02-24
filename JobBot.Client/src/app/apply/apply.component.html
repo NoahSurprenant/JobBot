@@ -5,6 +5,8 @@ Apply
 <form [formGroup]="form" class="grid ml-2">
     <x-input class="max-w-100" formControlName="job">Job</x-input>
     <x-input class="max-w-100" formControlName="location">Location</x-input>
+    <x-input class="max-w-100" formControlName="maxApplyCount">Max Apply Count</x-input>
+    <x-input class="max-w-100" formControlName="maxReadCount">Max Read Count</x-input>
     <x-button class="mt-1.5" [disabled]="disabled()" (clicked)="clicked()">Submit</x-button>
 </form>
 

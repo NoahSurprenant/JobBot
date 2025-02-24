@@ -10,6 +10,12 @@ namespace JobBot;
 
 public class Service
 {
+    private readonly string[] Blacklisted = [
+        "Universal Logistics Holdings, Inc.",
+        "Central Transport",
+        "HR-1",
+        "UACL Logistics, LLC",
+        ];
     private readonly IDbContextFactory<DataContext> _factory;
     private readonly ILogger<Service> _logger;
     private readonly Random _random = new Random();
@@ -24,7 +30,7 @@ public class Service
         _cache = configuration.GetValue<string>("Cache") ?? throw new Exception("Missing cache location");
     }
 
-    public async Task ExecuteAsync(string job, string location, CancellationToken stoppingToken)
+    public async Task ExecuteAsync(string job, string location, int maxApplyCount, int maxReadCount, CancellationToken stoppingToken)
     {
         var options = new ChromeOptions();
         options.AddArgument("--start-maximized");
@@ -74,7 +80,7 @@ public class Service
         {
             //var job = ".net developer";
             //var location = "Detroit Metropolitan Area";
-            var result = await Apply(driver, job, location, 100, 250);
+            var result = await Apply(driver, job, location, maxApplyCount, maxReadCount);
         }
         catch (Exception ex)
         {
@@ -219,6 +225,10 @@ public class Service
                 else if (item.JobRow.EasyApply is false)
                 {
                     dbRow.NoApplyReason = "No easy apply";
+                }
+                else if (Blacklisted.Contains(item.JobRow.CompanyName))
+                {
+                    dbRow.NoApplyReason = "Blacklisted company";
                 }
                 else if (dbRow.NoApplyReason is not null)
                 {

@@ -17,10 +17,10 @@ import { ControlValueAccessor, FormControl, FormControlDirective, FormControlNam
       }
     ]
 })
-export class DropdownComponent<T extends string | number> implements ControlValueAccessor, OnInit {
+export class DropdownComponent<T extends string | number | boolean | null> implements ControlValueAccessor, OnInit {
   displayErrors = input<boolean>(true);
   options = input.required<T[]>();
-  public control!: FormControl;
+  public control!: FormControl<T>;
   
   constructor(@Inject(Injector) private injector: Injector) {
   }
@@ -49,7 +49,7 @@ export class DropdownComponent<T extends string | number> implements ControlValu
         break;
       }
       default: {
-        this.control = (injectedControl as FormControlDirective).form as FormControl;
+        this.control = (injectedControl as FormControlDirective).form as FormControl<T>;
         break;
       }
     }

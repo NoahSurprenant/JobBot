@@ -1,5 +1,9 @@
 <div class="space-x-4 place-self-center mt-2">
     <x-button [disabled]="x.isLoading()" (clicked)="clicked()">Refresh</x-button>
+    <div class="inline-block">
+        <label>Applied: </label>
+        <x-dropdown [options]="[true, false, null]" [formControl]="formControl"></x-dropdown>
+    </div>
 </div>
 
 @if (questionKind() && label()) {
