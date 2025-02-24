@@ -242,29 +242,10 @@ public class Service
                     if (existing is not null)
                     {
                         // Pull related data
-                        dbRow.JobPostingSingleLines = context
-                            .JobPostingSingleLines
-                            .Include(x => x.SingleLine)
-                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
-                            .ToHashSet();
-
-                        dbRow.JobPostingComboBoxes = context
-                            .JobPostingComboBoxes
-                            .Include(x => x.ComboBox.ComboBoxOptions)
-                            .Include(x => x.ComboBox.ComboBoxOption)
-                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
-                            .ToHashSet();
-
-                        dbRow.JobPostingAutoLines = context
-                            .JobPostingAutoLines
-                            .Include(x => x.AutoLine)
-                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
-                            .ToHashSet();
-
-                        dbRow.JobPostingRadios = context
-                            .JobPostingRadios
-                            .Include(x => x.Radio.RadioOptions)
-                            .Include(x => x.Radio.RadioOption)
+                        dbRow.JobPostingQuestions = context
+                            .JobPostingQuestions
+                            .Include(x => x.Question.Options)
+                            .Include(x => x.Question.Option)
                             .Where(x => x.JobPostingID == dbRow.JobPostingID)
                             .ToHashSet();
                     }
@@ -435,173 +416,55 @@ public class Service
 
     private static void UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, QuestionPage questionPage)
     {
-        var toRemove1 = dbRow.JobPostingSingleLines.Where(x => x.SingleLine.QuestionPage == questionPage).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
-        var toRemove2 = dbRow.JobPostingComboBoxes.Where(x => x.ComboBox.QuestionPage == questionPage).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
-        var toRemove3 = dbRow.JobPostingAutoLines.Where(x => x.AutoLine.QuestionPage == questionPage).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
-        var toRemove4 = dbRow.JobPostingRadios.Where(x => x.Radio.QuestionPage == questionPage).ExceptBy(questions.Radios.Select(x => x.Label), x => x.Label);
-        foreach (var o in toRemove1)
-            dbRow.JobPostingSingleLines.Remove(o);
-        foreach (var o in toRemove2)
-            dbRow.JobPostingComboBoxes.Remove(o);
-        foreach (var o in toRemove3)
-            dbRow.JobPostingAutoLines.Remove(o);
-        foreach (var o in toRemove4)
-            dbRow.JobPostingRadios.Remove(o);
+        var toRemove1 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.SingleLine).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
+        var toRemove2 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.ComboBox).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
+        var toRemove3 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.AutoLine).ExceptBy(questions.Autos.Select(x => x.Label), x => x.Label);
+        var toRemove4 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.Radio).ExceptBy(questions.Radios.Select(x => x.Label), x => x.Label);
+        var toRemove = toRemove1.Concat(toRemove2).Concat(toRemove3).Concat(toRemove4).ToList();
+        foreach (var o in toRemove)
+            dbRow.JobPostingQuestions.Remove(o);
 
-        foreach (var question in questions.Singles)
+        foreach (var question in questions.QuestionDtos)
         {
-            var singleLine = context.SingleLines
-                .FirstOrDefault(x => x.Label == question.Label);
-            if (singleLine is null)
+            var x = context.Questions
+                .Include(x => x.Option!.Question)
+                .Include(x => x.Options)
+                .FirstOrDefault(x => x.Label == question.Label && x.QuestionKind == question.QuestionKind);
+            if (x is null)
             {
-                singleLine = new SingleLine()
+                x = new Question()
                 {
                     Label = question.Label,
-                    Value = question.Input,
-                    QuestionPage = questionPage,
+                    //Value = question.Input,
                     InputType = question.InputType,
+                    QuestionKind = question.QuestionKind,
+                    Options = question.Options.Select(x => new Option()
+                    {
+                        Label = question.Label,
+                        QuestionKind = question.QuestionKind,
+                        Value = x
+                    }).ToHashSet(),
                 };
-                context.SingleLines.Add(singleLine);
+                context.Questions.Add(x);
+                context.SaveChanges();
+                // Possible circular reference requires these to be seperate writes
+                if (question.Input is not null && (question.Input is not "Select an option" || question.QuestionKind is not QuestionKind.ComboBox))
+                {
+                    x.Value = question.Input;
+                    context.SaveChanges();
+                }
             }
             else // update selected value?
             {
 
             }
 
-            if (dbRow.JobPostingSingleLines.Any(x => x.Label == question.Label) is false)
+            if (dbRow.JobPostingQuestions.Any(x => x.Label == question.Label && x.Question.QuestionKind == x.QuestionKind) is false)
             {
-                dbRow.JobPostingSingleLines.Add(new JobPostingSingleLine()
+                dbRow.JobPostingQuestions.Add(new JobPostingQuestion()
                 {
-                    SingleLine = singleLine,
-                });
-            }
-
-            context.SaveChanges();
-        }
-
-        foreach (var question in questions.Combos)
-        {
-            var comboBox = context.ComboBoxes
-                .Include(x => x.ComboBoxOption!.ComboBox)
-                .Include(x => x.ComboBoxOptions)
-                .FirstOrDefault(x => x.Label == question.Label);
-            if (comboBox is null)
-            {
-                comboBox = new ComboBox()
-                {
-                    Label = question.Label,
-                    //SelectedOptionValue = question.Input,
-                    ComboBoxOptions = question.Options.Select(x => new ComboBoxOption()
-                    {
-                        Label = question.Label,
-                        Value = x
-                    }).ToHashSet(),
+                    Question = x,
                     QuestionPage = questionPage,
-                };
-                context.ComboBoxes.Add(comboBox);
-                context.SaveChanges();
-                // Possible circular reference requires these to be seperate writes
-                if (question.Input is not null && question.Input is not "Select an option")
-                {
-                    comboBox.Value = question.Input;
-                    context.SaveChanges();
-                }
-                else if (question.Input is not null)
-                {
-                    var a = 1;
-                }
-                else
-                {
-                    var a = 1;
-                }
-                
-            }
-            else // Upsert options?, update selected value
-            {
-
-            }
-
-            if (dbRow.JobPostingComboBoxes.Any(x => x.Label == question.Label) is false)
-            {
-                dbRow.JobPostingComboBoxes.Add(new JobPostingComboBox()
-                {
-                    ComboBox = comboBox,
-                });
-            }
-
-            context.SaveChanges();
-        }
-
-        foreach (var question in questions.Radios)
-        {
-            var radio = context.Radios
-                .Include(x => x.RadioOption!.Radio)
-                .Include(x => x.RadioOptions)
-                .FirstOrDefault(x => x.Label == question.Label);
-            if (radio is null)
-            {
-                radio = new Radio()
-                {
-                    Label = question.Label,
-                    //SelectedOptionValue = question.Input,
-                    RadioOptions = question.Options.Select(x => new RadioOption()
-                    {
-                        Label = question.Label,
-                        Value = x
-                    }).ToHashSet(),
-                    QuestionPage = questionPage,
-                };
-                context.Radios.Add(radio);
-                context.SaveChanges();
-                // Possible circular reference requires these to be seperate writes
-                if (question.Input is not null)
-                {
-                    radio.Value = question.Input;
-                    context.SaveChanges();
-                }
-
-            }
-            else // Upsert options?, update selected value
-            {
-
-            }
-
-            if (dbRow.JobPostingRadios.Any(x => x.Label == question.Label) is false)
-            {
-                dbRow.JobPostingRadios.Add(new JobPostingRadio()
-                {
-                    Radio = radio,
-                });
-            }
-
-            context.SaveChanges();
-        }
-
-        foreach (var question in questions.Autos)
-        {
-            var auto = context.AutoLines
-                .FirstOrDefault(x => x.Label == question.Label);
-            if (auto is null)
-            {
-                auto = new AutoLine()
-                {
-                    Label = question.Label,
-                    Value = question.Input,
-                    QuestionPage = questionPage,
-                    InputType = question.InputType,
-                };
-                context.AutoLines.Add(auto);
-            }
-            else // update selected value?
-            {
-
-            }
-
-            if (dbRow.JobPostingAutoLines.Any(x => x.Label == question.Label) is false)
-            {
-                dbRow.JobPostingAutoLines.Add(new JobPostingAutoLine()
-                {
-                    AutoLine = auto,
                 });
             }
 

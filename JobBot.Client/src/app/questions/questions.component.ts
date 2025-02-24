@@ -162,7 +162,6 @@ export interface QuestionDto
 {
   label: string,
   value: string | null,
-  questionPage: 'ContactInfo' | 'AdditionalQuestions' | 'WorkAuthorization',
   questionKind: 'AutoLine' | 'ComboBox' | 'Radio' | 'SingleLine',
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,

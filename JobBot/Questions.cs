@@ -9,6 +9,7 @@ public class Questions
     public List<ComboDto> Combos = new();
     public List<AutoDto> Autos = new();
     public List<RadioDto> Radios = new();
+    public List<IQuestionDto> QuestionDtos = new();
 
     public Questions(IWebDriver driver, long JobID, bool skipDiv)
     {
@@ -33,19 +34,27 @@ public class Questions
 
             if (combo)
             {
-                Combos.Add(new(inner, JobID));
+                var x = new ComboDto(inner, JobID);
+                Combos.Add(x);
+                QuestionDtos.Add(x);
             }
             else if (single)
             {
-                Singles.Add(new(inner, JobID));
+                var x = new SingleDto(inner, JobID);
+                Singles.Add(x);
+                QuestionDtos.Add(x);
             }
             else if (auto)
             {
-                Autos.Add(new(inner, JobID));
+                var x = new AutoDto(inner, JobID);
+                Autos.Add(x);
+                QuestionDtos.Add(x);
             }
             else if (radio)
             {
-                Radios.Add(new(fieldset, JobID));
+                var x = new RadioDto(fieldset!, JobID);
+                Radios.Add(x);
+                QuestionDtos.Add(x);
             }
             else
             {
@@ -76,7 +85,7 @@ public class Questions
     }
 }
 
-public class AutoDto
+public class AutoDto : IQuestionDto
 {
     //private const string _const = "single-typeahead-entity-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
@@ -84,7 +93,9 @@ public class AutoDto
     //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
+    public string[] Options => [];
     public InputType InputType { get; private set; }
+    public QuestionKind QuestionKind => QuestionKind.AutoLine;
 
     public AutoDto(IWebElement inner, long jobID)
     {
@@ -119,7 +130,7 @@ public class AutoDto
     }
 }
 
-public class SingleDto
+public class SingleDto : IQuestionDto
 {
     //private const string _const = "single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
@@ -127,7 +138,9 @@ public class SingleDto
     //public string Key { get; private set; }
     public string Label { get; private set; }
     public string? Input { get; private set; }
+    public string[] Options => [];
     public InputType InputType { get; private set; }
+    public QuestionKind QuestionKind => QuestionKind.SingleLine;
 
     public SingleDto(IWebElement inner, long jobID)
     {
@@ -166,7 +179,7 @@ public class SingleDto
     }
 }
 
-public class ComboDto
+public class ComboDto : IQuestionDto
 {
     //private const string _const = "text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-";
     //private readonly long jobID;
@@ -175,6 +188,8 @@ public class ComboDto
     public string Label { get; private set; }
     public string? Input { get; private set; }
     public string[] Options { get; private set; }
+    public InputType InputType => InputType.text;
+    public QuestionKind QuestionKind => QuestionKind.ComboBox;
 
     public ComboDto(IWebElement inner, long jobID)
     {
@@ -198,7 +213,7 @@ public class ComboDto
 }
 
 
-public class RadioDto
+public class RadioDto : IQuestionDto
 {
     //private readonly long jobID;
     public string IDAttribute { get; private set; }
@@ -206,6 +221,8 @@ public class RadioDto
     public string Label { get; private set; }
     public string? Input { get; private set; }
     public string[] Options { get; private set; }
+    public InputType InputType => InputType.text;
+    public QuestionKind QuestionKind => QuestionKind.Radio;
 
     public RadioDto(IWebElement fieldset, long jobID)
     {
@@ -230,4 +247,13 @@ public class RadioDto
         if (Input == string.Empty)
             Input = null;
     }
+}
+
+public interface IQuestionDto
+{
+    string Label { get; }
+    string? Input { get; }
+    string[] Options { get; }
+    InputType InputType { get; }
+    QuestionKind QuestionKind { get; }
 }

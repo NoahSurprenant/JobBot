@@ -12,10 +12,9 @@
 </div>
 
 <form [formGroup]="form()">
-<div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)] mx-4">
+<div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)] mx-4">
     <div class="font-bold flex items-center py-1.5">Label</div>
     <div class="font-bold flex items-center py-1.5">Value</div>
-    <div class="font-bold flex items-center py-1.5">Question Page</div>
     <div class="font-bold flex items-center py-1.5">Question Kind</div>
     <div class="font-bold flex items-center py-1.5">Job Count</div>
 @for (question of current().results; track question.label) {
@@ -41,9 +40,6 @@
             Not supported
         }
     }
-</div>
-<div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
-    {{question.questionPage}}
 </div>
 <div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     {{question.questionKind}}

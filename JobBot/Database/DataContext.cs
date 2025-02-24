@@ -14,32 +14,18 @@ public class DataContext : DbContext
 
     public DbSet<JobPosting> JobPostings { get; set; }
     public DbSet<JobPostingDetail> JobPostingDetails { get; set; }
-    public DbSet<Radio> Radios { get; set; }
-    public DbSet<ComboBox> ComboBoxes { get; set; }
-    public DbSet<SingleLine> SingleLines { get; set; }
-    public DbSet<AutoLine> AutoLines { get; set; }
-    public DbSet<JobPostingRadio> JobPostingRadios { get; set; }
-    public DbSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
-    public DbSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
-    public DbSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
-    public DbSet<ComboBoxOption> ComboBoxOptions { get; set; }
-    public DbSet<RadioOption> RadioOptions { get; set; }
+    public DbSet<Question> Questions { get; set; }
+    public DbSet<JobPostingQuestion> JobPostingQuestions { get; set; }
+    public DbSet<Option> Options { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new JobPostingConfiguration());
         modelBuilder.ApplyConfiguration(new JobPostingDetailConfiguration());
-        modelBuilder.ApplyConfiguration(new RadioConfiguration());
-        modelBuilder.ApplyConfiguration(new ComboBoxConfiguration());
-        modelBuilder.ApplyConfiguration(new SingleLineConfiguration());
-        modelBuilder.ApplyConfiguration(new AutoLineConfiguration());
-        modelBuilder.ApplyConfiguration(new JobPostingRadioConfiguration());
-        modelBuilder.ApplyConfiguration(new JobPostingComboBoxConfiguration());
-        modelBuilder.ApplyConfiguration(new JobPostingSingleLineConfiguration());
-        modelBuilder.ApplyConfiguration(new JobPostingAutoLineConfiguration());
-        modelBuilder.ApplyConfiguration(new ComboBoxOptionConfiguration());
-        modelBuilder.ApplyConfiguration(new RadioOptionConfiguration());
+        modelBuilder.ApplyConfiguration(new QuestionConfiguration());
+        modelBuilder.ApplyConfiguration(new JobPostingQuestionConfiguration());
+        modelBuilder.ApplyConfiguration(new OptionConfiguration());
     }
 }
 
@@ -74,261 +60,100 @@ public class JobPostingDetailConfiguration : IEntityTypeConfiguration<JobPosting
     }
 }
 
-public class JobPostingRadioConfiguration : IEntityTypeConfiguration<JobPostingRadio>
+public class JobPostingQuestionConfiguration : IEntityTypeConfiguration<JobPostingQuestion>
 {
-    public void Configure(EntityTypeBuilder<JobPostingRadio> entity)
+    public void Configure(EntityTypeBuilder<JobPostingQuestion> entity)
     {
-        entity.ToTable("JobPostingRadios");
+        entity.ToTable("JobPostingQuestions");
 
-        entity.HasKey(e => new { e.JobPostingID, e.Label });
+        entity.HasKey(e => new { e.JobPostingID, e.Label, e.QuestionKind });
 
-        entity.HasOne(x => x.Radio)
-            .WithMany(x => x.JobPostingRadios)
-            .HasForeignKey(x => x.Label);
+        entity.HasOne(x => x.Question)
+            .WithMany(x => x.JobPostingQuestions)
+            .HasForeignKey(x => new { x.Label, x.QuestionKind });
 
         entity.HasOne(x => x.JobPosting)
-            .WithMany(x => x.JobPostingRadios)
+            .WithMany(x => x.JobPostingQuestions)
             .HasForeignKey(x => x.JobPostingID);
     }
 }
 
-public class JobPostingComboBoxConfiguration : IEntityTypeConfiguration<JobPostingComboBox>
+public class OptionConfiguration : IEntityTypeConfiguration<Option>
 {
-    public void Configure(EntityTypeBuilder<JobPostingComboBox> entity)
+    public void Configure(EntityTypeBuilder<Option> entity)
     {
-        entity.ToTable("JobPostingComboBoxes");
+        entity.ToTable("Options");
 
-        entity.HasKey(e => new { e.JobPostingID, e.Label });
+        entity.HasKey(e => new { e.Value, e.Label, e.QuestionKind });
 
-        entity.HasOne(x => x.ComboBox)
-            .WithMany(x => x.JobPostingComboBoxes)
-            .HasForeignKey(x => x.Label);
+        entity.HasOne(x => x.Question)
+            .WithMany(x => x.Options)
+            .HasForeignKey(x => new { x.Label, x.QuestionKind });
 
-        entity.HasOne(x => x.JobPosting)
-            .WithMany(x => x.JobPostingComboBoxes)
-            .HasForeignKey(x => x.JobPostingID);
-    }
-}
-
-public class JobPostingSingleLineConfiguration : IEntityTypeConfiguration<JobPostingSingleLine>
-{
-    public void Configure(EntityTypeBuilder<JobPostingSingleLine> entity)
-    {
-        entity.ToTable("JobPostingSingleLines");
-
-        entity.HasKey(e => new { e.JobPostingID, e.Label });
-
-        entity.HasOne(x => x.SingleLine)
-            .WithMany(x => x.JobPostingSingleLines)
-            .HasForeignKey(x => x.Label);
-
-        entity.HasOne(x => x.JobPosting)
-            .WithMany(x => x.JobPostingSingleLines)
-            .HasForeignKey(x => x.JobPostingID);
-    }
-}
-
-public class JobPostingAutoLineConfiguration : IEntityTypeConfiguration<JobPostingAutoLine>
-{
-    public void Configure(EntityTypeBuilder<JobPostingAutoLine> entity)
-    {
-        entity.ToTable("JobPostingAutoLines");
-
-        entity.HasKey(e => new { e.JobPostingID, e.Label });
-
-        entity.HasOne(x => x.AutoLine)
-            .WithMany(x => x.JobPostingAutoLines)
-            .HasForeignKey(x => x.Label);
-
-        entity.HasOne(x => x.JobPosting)
-            .WithMany(x => x.JobPostingAutoLines)
-            .HasForeignKey(x => x.JobPostingID);
-    }
-}
-
-public class RadioOptionConfiguration : IEntityTypeConfiguration<RadioOption>
-{
-    public void Configure(EntityTypeBuilder<RadioOption> entity)
-    {
-        entity.ToTable("RadioOptions");
-
-        entity.HasKey(e => new { e.Value, e.Label });
-
-        entity.HasOne(x => x.Radio)
-            .WithMany(x => x.RadioOptions)
-            .HasForeignKey(x => x.Label);
-
-        entity.HasOne(x => x.SelectedRadio)
-            .WithOne(x => x.RadioOption)
-            .HasForeignKey<Radio>(x => new { x.Value, x.Label })
+        entity.HasOne(x => x.SelectedQuestion)
+            .WithOne(x => x.Option)
+            .HasForeignKey<Question>(x => new { x.Value, x.Label, x.QuestionKind })
             .IsRequired(false);
     }
 }
 
-public class RadioConfiguration : IEntityTypeConfiguration<Radio>
+public class QuestionConfiguration : IEntityTypeConfiguration<Question>
 {
-    public void Configure(EntityTypeBuilder<Radio> entity)
+    public void Configure(EntityTypeBuilder<Question> entity)
     {
-        entity.ToTable("Radios");
+        entity.ToTable("Questions");
 
-        entity.HasKey(e => e.Label);
+        entity.HasKey(e => new { e.Label, e.QuestionKind });
 
         // Value always comes from LinkedIn
         entity.Property(e => e.Label).ValueGeneratedNever();
     }
 }
 
-public class ComboBoxOptionConfiguration : IEntityTypeConfiguration<ComboBoxOption>
-{
-    public void Configure(EntityTypeBuilder<ComboBoxOption> entity)
-    {
-        entity.ToTable("ComboBoxOptions");
-
-        entity.HasKey(e => new { e.Value, e.Label });
-
-        entity.HasOne(x => x.ComboBox)
-            .WithMany(x => x.ComboBoxOptions)
-            .HasForeignKey(x => x.Label);
-
-        entity.HasOne(x => x.SelectedComboBox)
-            .WithOne(x => x.ComboBoxOption)
-            .HasForeignKey<ComboBox>(x => new { x.Value, x.Label })
-            .IsRequired(false);
-    }
-}
-
-public class ComboBoxConfiguration : IEntityTypeConfiguration<ComboBox>
-{
-    public void Configure(EntityTypeBuilder<ComboBox> entity)
-    {
-        entity.ToTable("ComboBoxes");
-
-        entity.HasKey(e => e.Label);
-
-        // Value always comes from LinkedIn
-        entity.Property(e => e.Label).ValueGeneratedNever();
-    }
-}
-
-public class SingleLineConfiguration : IEntityTypeConfiguration<SingleLine>
-{
-    public void Configure(EntityTypeBuilder<SingleLine> entity)
-    {
-        entity.ToTable("SingleLines");
-
-        entity.HasKey(e => e.Label);
-
-        // Value always comes from LinkedIn
-        entity.Property(e => e.Label).ValueGeneratedNever();
-    }
-}
-
-public class AutoLineConfiguration : IEntityTypeConfiguration<AutoLine>
-{
-    public void Configure(EntityTypeBuilder<AutoLine> entity)
-    {
-        entity.ToTable("AutoLines");
-
-        entity.HasKey(e => e.Label);
-
-        // Value always comes from LinkedIn
-        entity.Property(e => e.Label).ValueGeneratedNever();
-    }
-}
 
 // Link table
-public class JobPostingRadio
+public class JobPostingQuestion
 {
     public long JobPostingID { get; set; }
     public string Label { get; set; } = null!;
-    public JobPosting JobPosting { get; set; } = null!;
-    public Radio Radio { get; set; } = null!;
-}
-
-// Link table
-public class JobPostingComboBox
-{
-    public long JobPostingID { get; set; }
-    public string Label { get; set; } = null!;
-    public JobPosting JobPosting { get; set; } = null!;
-    public ComboBox ComboBox { get; set; } = null!;
-}
-
-// Link table
-public class JobPostingSingleLine
-{
-    public long JobPostingID { get; set; }
-    public string Label { get; set; } = null!;
-    public JobPosting JobPosting { get; set; } = null!;
-    public SingleLine SingleLine { get; set; } = null!;
-}
-
-// Link table
-public class JobPostingAutoLine
-{
-    public long JobPostingID { get; set; }
-    public string Label { get; set; } = null!;
-    public JobPosting JobPosting { get; set; } = null!;
-    public AutoLine AutoLine { get; set; } = null!;
-}
-
-public class Radio
-{
-    public Radio()
-    {
-        JobPostingRadios = new HashSet<JobPostingRadio>();
-        RadioOptions = new HashSet<RadioOption>();
-    }
-    public string Label { get; set; } = null!;
+    public QuestionKind QuestionKind { get; set; }
     public QuestionPage QuestionPage { get; set; }
-    public string? Value { get; set; }
-    public RadioOption? RadioOption { get; set; }
-    public HashSet<JobPostingRadio> JobPostingRadios { get; set; }
-    public HashSet<RadioOption> RadioOptions { get; set; }
+    public JobPosting JobPosting { get; set; } = null!;
+    public Question Question { get; set; } = null!;
 }
 
-public class RadioOption
+public class Question
 {
-    public string Label { get; set; } = null!;
-    public string Value { get; set; } = null!;
-    public Radio Radio { get; set; } = null!;
-    public Radio? SelectedRadio { get; set; }
-}
-
-public class ComboBox
-{
-    public ComboBox()
+    public Question()
     {
-        JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
-        ComboBoxOptions = new HashSet<ComboBoxOption>();
+        JobPostingQuestions = new HashSet<JobPostingQuestion>();
+        Options = new HashSet<Option>();
     }
-    public string Label { get; set; } = null!;
-    public QuestionPage QuestionPage { get; set; }
-    public string? Value { get; set; }
-    public ComboBoxOption? ComboBoxOption { get; set; }
-    public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
-    public HashSet<ComboBoxOption> ComboBoxOptions { get; set; }
-}
-
-public class ComboBoxOption
-{
-    public string Label { get; set; } = null!;
-    public string Value { get; set; } = null!;
-    public ComboBox ComboBox { get; set; } = null!;
-    public ComboBox? SelectedComboBox { get; set; }
-}
-
-public class SingleLine
-{
-    public SingleLine()
-    {
-        JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
-    }
-    public string Label { get; set; } = null!;
-    public QuestionPage QuestionPage { get; set; }
-    public string? Value { get; set; } = null!;
+    /// <summary>
+    /// Currently only set for Single Line and Auto Line to text or number. Otherwise not used and defaults to text.
+    /// </summary>
     public InputType InputType { get; set; }
-    public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
+    public QuestionKind QuestionKind { get; set; }
+    public string Label { get; set; } = null!;
+    public string? Value { get; set; }
+    /// <summary>
+    /// May not be null on Radio or ComboBox
+    /// </summary>
+    public Option? Option { get; set; }
+    public HashSet<JobPostingQuestion> JobPostingQuestions { get; set; }
+    /// <summary>
+    /// Should have values for Radio or ComboBox
+    /// </summary>
+    public HashSet<Option> Options { get; set; }
+}
+
+public class Option
+{
+    public string Label { get; set; } = null!;
+    public QuestionKind QuestionKind { get; set; }
+    public string Value { get; set; } = null!;
+    public Question Question { get; set; } = null!;
+    public Question? SelectedQuestion { get; set; }
 }
 
 public enum InputType
@@ -341,17 +166,12 @@ public enum InputType
     password,
 }
 
-public class AutoLine
+public enum QuestionKind
 {
-    public AutoLine()
-    {
-        JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
-    }
-    public string Label { get; set; } = null!;
-    public QuestionPage QuestionPage { get; set; }
-    public string? Value { get; set; } = null!;
-    public InputType InputType { get; set; }
-    public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
+    AutoLine,
+    ComboBox,
+    Radio,
+    SingleLine,
 }
 
 public class JobPostingDetail
@@ -366,15 +186,9 @@ public class JobPosting
 {
     public JobPosting()
     {
-        JobPostingRadios = new HashSet<JobPostingRadio>();
-        JobPostingComboBoxes = new HashSet<JobPostingComboBox>();
-        JobPostingSingleLines = new HashSet<JobPostingSingleLine>();
-        JobPostingAutoLines = new HashSet<JobPostingAutoLine>();
+        JobPostingQuestions = new HashSet<JobPostingQuestion>();
     }
-    public HashSet<JobPostingRadio> JobPostingRadios { get; set; }
-    public HashSet<JobPostingComboBox> JobPostingComboBoxes { get; set; }
-    public HashSet<JobPostingSingleLine> JobPostingSingleLines { get; set; }
-    public HashSet<JobPostingAutoLine> JobPostingAutoLines { get; set; }
+    public HashSet<JobPostingQuestion> JobPostingQuestions { get; set; }
     public JobPostingDetail? JobPostingDetail { get; set; }
     public long JobPostingID { get; set; }
     public string CompanyName { get; set; } = null!;
