@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250224220525_InitialMigration")]
+    [Migration("20250302031727_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -142,13 +142,21 @@ namespace JobBot.Migrations
                     b.Property<int>("InputType")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("OptionLabel")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("OptionQuestionKind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OptionValue")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Value")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Label", "QuestionKind");
 
-                    b.HasIndex("Value", "Label", "QuestionKind")
-                        .IsUnique();
+                    b.HasIndex("OptionValue", "OptionLabel", "OptionQuestionKind");
 
                     b.ToTable("Questions", (string)null);
                 });
@@ -195,8 +203,8 @@ namespace JobBot.Migrations
             modelBuilder.Entity("JobBot.Database.Question", b =>
                 {
                     b.HasOne("JobBot.Database.Option", "Option")
-                        .WithOne("SelectedQuestion")
-                        .HasForeignKey("JobBot.Database.Question", "Value", "Label", "QuestionKind");
+                        .WithMany()
+                        .HasForeignKey("OptionValue", "OptionLabel", "OptionQuestionKind");
 
                     b.Navigation("Option");
                 });
@@ -206,11 +214,6 @@ namespace JobBot.Migrations
                     b.Navigation("JobPostingDetail");
 
                     b.Navigation("JobPostingQuestions");
-                });
-
-            modelBuilder.Entity("JobBot.Database.Option", b =>
-                {
-                    b.Navigation("SelectedQuestion");
                 });
 
             modelBuilder.Entity("JobBot.Database.Question", b =>

@@ -94,14 +94,17 @@ namespace JobBot.Migrations
                     QuestionKind = table.Column<int>(type: "INTEGER", nullable: false),
                     Label = table.Column<string>(type: "TEXT", nullable: false),
                     InputType = table.Column<int>(type: "INTEGER", nullable: false),
-                    Value = table.Column<string>(type: "TEXT", nullable: true)
+                    Value = table.Column<string>(type: "TEXT", nullable: true),
+                    OptionValue = table.Column<string>(type: "TEXT", nullable: true),
+                    OptionLabel = table.Column<string>(type: "TEXT", nullable: true),
+                    OptionQuestionKind = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Questions", x => new { x.Label, x.QuestionKind });
                     table.ForeignKey(
-                        name: "FK_Questions_Options_Value_Label_QuestionKind",
-                        columns: x => new { x.Value, x.Label, x.QuestionKind },
+                        name: "FK_Questions_Options_OptionValue_OptionLabel_OptionQuestionKind",
+                        columns: x => new { x.OptionValue, x.OptionLabel, x.OptionQuestionKind },
                         principalTable: "Options",
                         principalColumns: new[] { "Value", "Label", "QuestionKind" });
                 });
@@ -117,10 +120,9 @@ namespace JobBot.Migrations
                 columns: new[] { "Label", "QuestionKind" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Questions_Value_Label_QuestionKind",
+                name: "IX_Questions_OptionValue_OptionLabel_OptionQuestionKind",
                 table: "Questions",
-                columns: new[] { "Value", "Label", "QuestionKind" },
-                unique: true);
+                columns: new[] { "OptionValue", "OptionLabel", "OptionQuestionKind" });
 
             migrationBuilder.AddForeignKey(
                 name: "FK_JobPostingQuestions_Questions_Label_QuestionKind",

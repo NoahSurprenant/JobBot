@@ -90,10 +90,11 @@ public class OptionConfiguration : IEntityTypeConfiguration<Option>
             .WithMany(x => x.Options)
             .HasForeignKey(x => new { x.Label, x.QuestionKind });
 
-        entity.HasOne(x => x.SelectedQuestion)
-            .WithOne(x => x.Option)
-            .HasForeignKey<Question>(x => new { x.Value, x.Label, x.QuestionKind })
-            .IsRequired(false);
+        // Cannot do this foreign key because not all questions use options for their value.
+        //entity.HasOne(x => x.SelectedQuestion)
+        //    .WithOne(x => x.Option)
+        //    .HasForeignKey<Question>(x => new { x.Value, x.Label, x.QuestionKind })
+        //    .IsRequired(false);
     }
 }
 
@@ -153,7 +154,7 @@ public class Option
     public QuestionKind QuestionKind { get; set; }
     public string Value { get; set; } = null!;
     public Question Question { get; set; } = null!;
-    public Question? SelectedQuestion { get; set; }
+    //public Question? SelectedQuestion { get; set; }
 }
 
 public enum InputType
