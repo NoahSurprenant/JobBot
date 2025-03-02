@@ -83,7 +83,7 @@ public class ApiController : ControllerBase
                 .FirstOrDefaultAsync(x => x.Label == question.Label && x.QuestionKind == question.QuestionKind, ct)
                 ?? throw new Exception($"Could not find question: {question.Label} | {question.QuestionKind}");
 
-            if (db.QuestionKind is QuestionKind.ComboBox or QuestionKind.Radio)
+            if (question.Value is not null && db.QuestionKind is QuestionKind.ComboBox or QuestionKind.Radio)
             {
                 if (db.Options.Any(x => x.Value == question.Value) is false)
                     throw new Exception($"{question.Value} is not a valid value for {db.Label} | {question.QuestionKind}");

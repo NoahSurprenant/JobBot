@@ -285,4 +285,5 @@ public enum QuestionPage
     ContactInfo,
     AdditionalQuestions,
     WorkAuthorization,
+    HomeAddress,
 }

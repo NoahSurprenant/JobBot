@@ -128,6 +128,11 @@ public class AutoDto : IQuestionDto
         //    }
         //}
     }
+
+    public async Task SetInput(string? value)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class SingleDto : IQuestionDto
@@ -141,7 +146,7 @@ public class SingleDto : IQuestionDto
     public string[] Options => [];
     public InputType InputType { get; private set; }
     public QuestionKind QuestionKind => QuestionKind.SingleLine;
-
+    private readonly IWebElement _input;
     public SingleDto(IWebElement inner, long jobID)
     {
         //this.jobID = jobID;
@@ -150,8 +155,8 @@ public class SingleDto : IQuestionDto
         var firstDiv = inner.FindElement(By.XPath("./div[1]/div"));
         var label = firstDiv.FindElement(By.XPath("./label")); // Mobile phone number
         Label = label.Text;
-        var input = firstDiv.FindElement(By.XPath("./input"));
-        Input = input.GetAttribute("value");
+        _input = firstDiv.FindElement(By.XPath("./input"));
+        Input = _input.GetAttribute("value");
         if (Input == string.Empty)
             Input = null;
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
@@ -177,6 +182,15 @@ public class SingleDto : IQuestionDto
         //}
         //Key = ForAttribute.Replace(_const + jobID + "-", "");
     }
+
+    public async Task SetInput(string? value)
+    {
+        if (Input is not null)
+            _input.Clear();
+        if (value is not null)
+            await _input.SendHumanKeys(value);
+        Input = value;
+    }
 }
 
 public class ComboDto : IQuestionDto
@@ -190,6 +204,7 @@ public class ComboDto : IQuestionDto
     public string[] Options { get; private set; }
     public InputType InputType => InputType.text;
     public QuestionKind QuestionKind => QuestionKind.ComboBox;
+    private readonly SelectElement _selectElement;
 
     public ComboDto(IWebElement inner, long jobID)
     {
@@ -197,10 +212,10 @@ public class ComboDto : IQuestionDto
         var label = inner.FindElement(By.XPath("./label"));
         Label = label.FindElement(By.XPath("./span[2]")).Text;
         var select = inner.FindElement(By.XPath("./select"));
-        var selectObj = new SelectElement(select);
-        if (selectObj.IsMultiple)
+        _selectElement = new SelectElement(select);
+        if (_selectElement.IsMultiple)
             throw new NotImplementedException("Currently not supporting multiple selections!");
-        Input = selectObj.SelectedOption.Text;
+        Input = _selectElement.SelectedOption.Text;
         if (Input == string.Empty || Input == "Select an option")
             Input = null;
         var options = select.FindElements(By.XPath("./option"));
@@ -209,6 +224,15 @@ public class ComboDto : IQuestionDto
             throw new Exception("Failed to get options");
         ForAttribute = label.GetDomAttribute("for") ?? throw new Exception("Missing for attribute");
         //Key = ForAttribute.Replace(_const + jobID + "-", "");
+    }
+
+    public Task SetInput(string? value)
+    {
+        var raw = value;
+        raw ??= "Select an option";
+        _selectElement.SelectByValue(raw);
+        Input = value;
+        return Task.CompletedTask;
     }
 }
 
@@ -247,6 +271,11 @@ public class RadioDto : IQuestionDto
         if (Input == string.Empty)
             Input = null;
     }
+
+    public async Task SetInput(string? value)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public interface IQuestionDto
@@ -256,4 +285,5 @@ public interface IQuestionDto
     string[] Options { get; }
     InputType InputType { get; }
     QuestionKind QuestionKind { get; }
+    Task SetInput(string? value);
 }

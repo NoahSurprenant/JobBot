@@ -53,6 +53,13 @@ export class DropdownComponent<T extends string | number | boolean | null> imple
         break;
       }
     }
+
+    this.control.events.subscribe({
+      next: (x) => {
+        if (x.source.value === 'null')
+          this.control.patchValue(null as T, { emitEvent: false });
+      },
+    })
   }
   
   writeValue(obj: any): void {

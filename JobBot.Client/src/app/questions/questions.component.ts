@@ -143,6 +143,7 @@ export class QuestionsComponent implements OnInit {
   });
 
   form = computed(() => {
+    // TODO: hitting refresh button breaks this form. No longer tracks dirty correctly. Look into this
     return this.qcs.toFormGroup(this.toQuestionBase(this.current().results));
   });
 

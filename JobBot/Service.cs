@@ -317,20 +317,21 @@ public class Service
             var headerText = header.Text;
 
             UncheckFollow(driver);
-            if (headerText == "Contact info" || headerText == "Additional Questions" || headerText == "Work authorization")
+            if (headerText is "Contact info" or "Additional Questions" or "Work authorization" or "Home address")
             {
                 var qp = headerText switch
                 {
                     "Contact info" => QuestionPage.ContactInfo,
                     "Additional Questions" => QuestionPage.AdditionalQuestions,
                     "Work authorization" => QuestionPage.WorkAuthorization,
+                    "Home address" => QuestionPage.HomeAddress,
                     _ => throw new ArgumentOutOfRangeException(nameof(headerText), headerText,
                         $"{nameof(headerText)} was {headerText}. Must be Contact info, Additional Questions, or Work authorization"),
                 };
                 // Yet another question page found 'Work authorization' which also does not need the div skip.
                 // If header can be anything maybe we need better way to determine if we are at a question step
                 var questions = new Questions(driver, JobID, skipDiv: qp is QuestionPage.ContactInfo);
-                UpsertQuestions(context, dbRow, questions, qp);
+                await UpsertQuestions(context, dbRow, questions, qp);
 
                 // Fill in any questions from db that we can.
                 // Are there any that we can't? Then bail out
@@ -339,7 +340,6 @@ public class Service
 
                 if (missing)
                 {
-                    
                     return false;
                 }
                     
@@ -348,12 +348,12 @@ public class Service
                 if (result)
                     return true;
             }
-            else if (headerText == "Resume" || headerText == "Education" || headerText == "Review" || headerText == "Review your application" || headerText == "Work experience")
+            else if (headerText is "Resume" or "Education" or "Review" or "Review your application" or "Work experience")
             {
                 var result = await ClickContinue(driver);
                 if (result)
                     return true;
-                else if (headerText == "Review" || headerText == "Review your application")
+                else if (headerText is "Review" or "Review your application")
                     throw new Exception("Failed to submit app");
             }
             else
@@ -414,7 +414,7 @@ public class Service
         }
     }
 
-    private static void UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, QuestionPage questionPage)
+    private static async Task UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, QuestionPage questionPage)
     {
         var toRemove1 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.SingleLine).ExceptBy(questions.Singles.Select(x => x.Label), x => x.Label);
         var toRemove2 = dbRow.JobPostingQuestions.Where(x => x.QuestionPage == questionPage && x.Question.QuestionKind == QuestionKind.ComboBox).ExceptBy(questions.Combos.Select(x => x.Label), x => x.Label);
@@ -456,7 +456,11 @@ public class Service
             }
             else // update selected value?
             {
-
+                // No do not update selected value. Rather fill in from db
+                if (question.Input != x.Value)
+                {
+                    await question.SetInput(x.Value);
+                }
             }
 
             if (dbRow.JobPostingQuestions.Any(x => x.Label == question.Label && x.Question.QuestionKind == x.QuestionKind) is false)
