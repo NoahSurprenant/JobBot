@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, OnInit, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, OnInit, resource, signal } from '@angular/core';
 import { ToastService } from '../toast.service';
 import { ButtonComponent } from '../shared/button/button.component';
 import { InputComponent } from '../shared/input/input.component';
@@ -29,12 +29,23 @@ import { RouterModule } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuestionsComponent implements OnInit {
+  jobID = input<number>();
+
   constructor(private http: HttpClient, private toastService: ToastService, private qcs: QuestionControlService) {
     effect(() => {
       const x = this.x.value();
       if (x)
         this.current.set(x);
     })
+
+    effect(() => {
+      if (this.questionFilter().jobID == this.jobID())
+        return;
+      this.questionFilter.update(x => {
+        x.jobID = this.jobID() ?? null;
+        return {...x};
+      });
+    });
   }
 
   isEven(i: number) {
@@ -56,7 +67,7 @@ export class QuestionsComponent implements OnInit {
     });
   }
 
-  questionFilter = signal<QuestionFilter>({value: null});
+  questionFilter = signal<QuestionFilter>({value: null, jobID: this.jobID() ?? null});
 
   toggleValueFilter() {
     this.questionFilter.update(x => {
@@ -172,6 +183,7 @@ export interface QuestionDto
 
 export interface QuestionFilter {
   value: PropertyFilter | null,
+  jobID: number | null,
 }
 
 export interface PropertyFilter {

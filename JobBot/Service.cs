@@ -30,41 +30,39 @@ public class Service
         _cache = configuration.GetValue<string>("Cache") ?? throw new Exception("Missing cache location");
     }
 
+    public async Task Apply(long jobID, CancellationToken ct)
+    {
+        using var driver = CreateDriver();
+        driver.Navigate().GoToUrl($"https://www.linkedin.com/jobs/view/{jobID}");
+        await Task.Delay(10); // TODO: smarter delay
+        //var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+        //var x = new JobDetailPane(driver, detailContent);
+        var x = new JobPage(driver);
+
+        using var context = _factory.CreateDbContext();
+        var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == jobID);
+
+        using var transaction = context.Database.BeginTransaction();
+
+        if (existing is not null)
+        {
+            existing.JobPostingDetail = context.JobPostingDetails.FirstOrDefault(x => x.JobPostingID == existing.JobPostingID);
+        }
+
+        //upsert
+        var dbRow = existing?.Update(x) ?? JobPosting.Create(x);
+        if (existing is null)
+            context.Add(dbRow);
+
+        var result = await TryApply(driver, context, jobID, existing, x, dbRow);
+
+        context.SaveChanges();
+        transaction.Commit();
+    }
+
     public async Task ExecuteAsync(string job, string location, int maxApplyCount, int maxReadCount, CancellationToken stoppingToken)
     {
-        var options = new ChromeOptions();
-        options.AddArgument("--start-maximized");
-        options.AddArgument("--disable-blink-features=AutomationControlled");
-        options.AddArgument($"user-data-dir={_cache}");
-        //options.AddArgument("--remote-debugging-port=9292");
-        //options.AddArgument("--headless");
-        options.AddExcludedArgument("enable-automation");
-        options.AddAdditionalChromeOption("useAutomationExtension", false);
-
-        //options.AddArgument($"--proxy-server={_proxy}");
-
-        using var service = ChromeDriverService.CreateDefaultService();
-
-        var p = service.DriverServicePath;
-
-        //var driverPath = "C:\\Users\\grunt\\.cache\\selenium\\chromedriver\\win64\\132.0.6834.83";
-        //var oldFile = Path.Combine(driverPath, "chromedriver.exe");
-        //var newFile = Path.Combine(driverPath, "test.exe");
-
-        //if (!Path.Exists(newFile))
-        //{
-        //    using var s = File.OpenRead(oldFile);
-        //    var text = File.ReadAllText(oldFile, Encoding.Latin1).Replace("cdc_", "abc_");
-        //    File.WriteAllText(newFile, text, Encoding.Latin1);
-        //}
-
-        //https://stackoverflow.com/questions/33225947/can-a-website-detect-when-you-are-using-selenium-with-chromedriver/41220267#41220267
-        //service.DriverServicePath = driverPath;
-        //service.DriverServiceExecutableName = "test.exe";
-
-        using var driver = new ChromeDriver(service: service, options: options);
-
-        driver.ExecuteCdpCommand("Page.removeScriptToEvaluateOnNewDocument", new([new("identifier", "1")]));
+        using var driver = CreateDriver();
 
         //https://setcookie.net/
         //https://nowsecure.nl/
@@ -88,6 +86,22 @@ public class Service
         }
 
         driver.Quit();
+    }
+
+    private ChromeDriver CreateDriver()
+    {
+        var options = new ChromeOptions();
+        options.AddArgument("--start-maximized");
+        options.AddArgument("--disable-blink-features=AutomationControlled");
+        options.AddArgument($"user-data-dir={_cache}");
+        //options.AddArgument("--remote-debugging-port=9292");
+        //options.AddArgument("--headless");
+        options.AddExcludedArgument("enable-automation");
+        options.AddAdditionalChromeOption("useAutomationExtension", false);
+        var service = ChromeDriverService.CreateDefaultService();
+        var driver = new ChromeDriver(service: service, options: options);
+        driver.ExecuteCdpCommand("Page.removeScriptToEvaluateOnNewDocument", new([new("identifier", "1")]));
+        return driver;
     }
 
     /// <summary>
@@ -167,6 +181,9 @@ public class Service
         var count = 0;
         foreach (var x in jobRows)
         {
+            if (count >= appliesRemaining) // We ran out of tokens, we should stop applying now
+                continue;
+
             var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
             var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == JobID);
             if (existing is not null || existing is not null && existing.NoApplyReason is not null)
@@ -193,7 +210,7 @@ public class Service
 
             await LoadDetailPane(driver, x, row.JobID);
 
-            
+
 
             var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
             var item = new JobRowWithDetail(row, new(driver, detailContent));
@@ -211,87 +228,102 @@ public class Service
             if (existing is null)
                 context.Add(dbRow);
 
-            // Missing in db
-            if (row.Applied)
+            var result = await TryApply(driver, context, JobID, existing, item.JobDetailPane, dbRow);
+
+            if (result is TryApplyResult.Success)
             {
-                // We need to add to db only. No apply action needed.
-            }
-            else if (count < appliesRemaining) // Should we apply?
-            {
-                if (item.JobRow.JobTitle.Contains("wordpress"))
-                {
-                    dbRow.NoApplyReason = "Wordpress";
-                }
-                else if (item.JobRow.EasyApply is false)
-                {
-                    dbRow.NoApplyReason = "No easy apply";
-                }
-                else if (Blacklisted.Contains(item.JobRow.CompanyName))
-                {
-                    dbRow.NoApplyReason = "Blacklisted company";
-                }
-                else if (dbRow.NoApplyReason is not null)
-                {
-
-                }
-                else
-                {
-                    await item.JobDetailPane.Header.ClickEasyApply(driver);
-                    await Wait(1, 1);
-
-                    if (existing is not null)
-                    {
-                        // Pull related data
-                        dbRow.JobPostingQuestions = context
-                            .JobPostingQuestions
-                            .Include(x => x.Question.Options)
-                            .Include(x => x.Question.Option)
-                            .Where(x => x.JobPostingID == dbRow.JobPostingID)
-                            .ToHashSet();
-                    }
-
-                    var result = await DoStepper(driver, context, JobID, dbRow);
-
-                    if (result is false)
-                    {
-                        dbRow.NoApplyReason = "Missing answers";
-
-                        var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
-                        closeBtn.Click();
-                        await Wait();
-
-                        var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
-                        discard.Click();
-                        await Wait();
-                    }
-                    else
-                    {
-                        row.Applied = true;
-                        dbRow.Applied = true;
-                        count++;
-                        list.Add(item);
-                    }
-                }
+                row.Applied = true;
+                count++;
+                list.Add(item);
             }
 
-            
             context.SaveChanges();
             transaction.Commit();
         }
 
         // Example selecting row and then going to job page
-        //var first = typed.First();
+        //var first = list.First();
         //if (first.JobRow.IsCurrentlySelected() is false)
         //{
-        //    LoadDetailPane(driver, first.JobRow.Element, first.JobRow.JobID);
+        //    await LoadDetailPane(driver, first.JobRow.Element, first.JobRow.JobID);
         //}
 
-        //var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-        //var dto = new JobDetailPane(detailContent);
+        //var detailContentx = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
+        //var dto = new JobDetailPane(driver, detailContentx);
         //dto.Header.Click(driver);
 
         //var jobPage = new JobPage(driver);
         return list.ToArray();
+    }
+
+    private enum TryApplyResult
+    {
+        FailedCheck,
+        MissingAnswers,
+        Success,
+    }
+
+    private async Task<TryApplyResult> TryApply(ChromeDriver driver, DataContext context, long JobID, JobPosting? existing, IDetail item, JobPosting dbRow)
+    {
+        if (dbRow.Applied)
+        {
+            return TryApplyResult.FailedCheck;
+        }
+        if (dbRow.JobTitle.Contains("wordpress"))
+        {
+            dbRow.NoApplyReason = "Wordpress";
+            return TryApplyResult.FailedCheck;
+        }
+        else if (dbRow.EasyApply is false)
+        {
+            dbRow.NoApplyReason = "No easy apply";
+            return TryApplyResult.FailedCheck;
+        }
+        else if (Blacklisted.Contains(dbRow.CompanyName))
+        {
+            dbRow.NoApplyReason = "Blacklisted company";
+            return TryApplyResult.FailedCheck;
+        }
+        else if (dbRow.NoApplyReason is not null)
+        {
+            return TryApplyResult.FailedCheck;
+        }
+
+        // Passed all check, try to apply
+        await item.Header.ClickEasyApply(driver);
+        await Wait(1, 1);
+
+        if (existing is not null)
+        {
+            // Pull related data
+            dbRow.JobPostingQuestions = context
+                .JobPostingQuestions
+                .Include(x => x.Question.Options)
+                .Include(x => x.Question.Option)
+                .Where(x => x.JobPostingID == dbRow.JobPostingID)
+                .ToHashSet();
+        }
+
+        var result = await DoStepper(driver, context, JobID, dbRow);
+
+        if (result is false)
+        {
+            dbRow.NoApplyReason = "Missing answers";
+
+            var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
+            closeBtn.Click();
+            await Wait();
+
+            var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
+            discard.Click();
+            await Wait();
+            return TryApplyResult.MissingAnswers;
+        }
+        else
+        {
+            dbRow.Applied = true;
+            return TryApplyResult.Success;
+        }
     }
 
     private async Task<bool> DoStepper(ChromeDriver driver, DataContext context, long JobID, JobPosting dbRow)

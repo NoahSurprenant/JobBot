@@ -1,0 +1,8 @@
+<p class="m-4">Job: {{jobID()}}</p>
+<!-- TODO: Actually show useful info here. -->
+ @if(safeHtml()) {
+    <div class="border m-4 p-2" [innerHTML]="safeHtml()"></div>
+ }
+<x-button class="m-4" [disabled]="submitting()" (clicked)="clicked()">Apply</x-button>
+
+<app-questions [jobID]="jobID()"></app-questions>

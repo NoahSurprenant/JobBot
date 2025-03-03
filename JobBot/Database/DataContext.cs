@@ -219,31 +219,30 @@ public class JobPosting
     public static JobPosting Create(JobRowWithDetail x)
     {
         var y = new JobPosting();
-        y.JobPostingDetail = new JobPostingDetail()
-        {
-            Details = x.JobDetailPane.JobDetails.Details,
-        };
-        y.JobPostingID = x.JobRow.JobID;
-        y.CompanyName = x.JobRow.CompanyName;
-        y.CompanyLink = x.JobDetailPane.Header.CompanyLink;
-        y.JobTitle = x.JobRow.JobTitle;
-        y.Location = x.JobRow.Location;
-        y.IsRepost = x.JobDetailPane.Header.IsRepost;
-        y.Amount = x.JobDetailPane.Header.Amount;
-        y.DurationKind = x.JobDetailPane.Header.DurationKind;
-        y.Applicants = x.JobDetailPane.Header.Applicants;
-        y.OfficeKind = x.JobDetailPane.Header.OfficeKind;
-        y.TimeKind = x.JobDetailPane.Header.TimeKind;
-        y.HourlyMin = x.JobDetailPane.Header.HourlyMin;
-        y.HourlyMax = x.JobDetailPane.Header.HourlyMax;
-        y.SalaryMin = x.JobDetailPane.Header.SalaryMin;
-        y.SalaryMax = x.JobDetailPane.Header.SalaryMax;
-        y.Has401k = x.JobRow.Has401k;
-        y.Dental = x.JobRow.Dental;
-        y.Medical = x.JobRow.Medical;
-        y.Vision = x.JobRow.Vision;
-        y.EasyApply = x.JobRow.EasyApply;
-        y.Applied = x.JobRow.Applied;
+        y.JobPostingDetail = new JobPostingDetail();
+
+        y.SetRow(x.JobRow);
+        y.SetDetail(x.JobDetailPane);
+
+        y.DatePulled = DateTime.UtcNow;
+        y.LastDatePulled = y.DatePulled;
+        return y;
+    }
+
+    public JobPosting Update(JobPage x)
+    {
+        SetDetail(x);
+        LastDatePulled = DateTime.UtcNow;
+        return this;
+    }
+
+    public static JobPosting Create(JobPage x)
+    {
+        var y = new JobPosting();
+        y.JobPostingDetail = new JobPostingDetail();
+
+        y.SetDetail(x);
+
         y.DatePulled = DateTime.UtcNow;
         y.LastDatePulled = y.DatePulled;
         return y;
@@ -251,32 +250,42 @@ public class JobPosting
 
     public JobPosting Update(JobRowWithDetail x)
     {
-        if (JobPostingDetail is null)
-            JobPostingDetail = new JobPostingDetail();
-        JobPostingDetail.Details = x.JobDetailPane.JobDetails.Details;
-        JobPostingID = x.JobRow.JobID;
-        CompanyName = x.JobRow.CompanyName;
-        CompanyLink = x.JobDetailPane.Header.CompanyLink;
-        JobTitle = x.JobRow.JobTitle;
-        Location = x.JobRow.Location;
-        IsRepost = x.JobDetailPane.Header.IsRepost;
-        Amount = x.JobDetailPane.Header.Amount;
-        DurationKind = x.JobDetailPane.Header.DurationKind;
-        Applicants = x.JobDetailPane.Header.Applicants;
-        OfficeKind = x.JobDetailPane.Header.OfficeKind;
-        TimeKind = x.JobDetailPane.Header.TimeKind;
-        HourlyMin = x.JobDetailPane.Header.HourlyMin;
-        HourlyMax = x.JobDetailPane.Header.HourlyMax;
-        SalaryMin = x.JobDetailPane.Header.SalaryMin;
-        SalaryMax = x.JobDetailPane.Header.SalaryMax;
-        Has401k = x.JobRow.Has401k;
-        Dental = x.JobRow.Dental;
-        Medical = x.JobRow.Medical;
-        Vision = x.JobRow.Vision;
-        EasyApply = x.JobRow.EasyApply;
-        Applied = x.JobRow.Applied;
+        SetRow(x.JobRow);
+        SetDetail(x.JobDetailPane);
         LastDatePulled = DateTime.UtcNow;
         return this;
+    }
+
+    private void SetRow(JobRow x)
+    {
+        JobPostingID = x.JobID;
+        CompanyName = x.CompanyName;
+        JobTitle = x.JobTitle;
+        Location = x.Location;
+        Has401k = x.Has401k;
+        Dental = x.Dental;
+        Medical = x.Medical;
+        Vision = x.Vision;
+        EasyApply = x.EasyApply;
+        Applied = x.Applied;
+    }
+
+    private void SetDetail(IDetail x)
+    {
+        JobPostingDetail ??= new JobPostingDetail();
+        JobPostingDetail.Details = x.JobDetails.Details;
+        JobPostingID = x.Header.JobID;
+        CompanyLink = x.Header.CompanyLink;
+        IsRepost = x.Header.IsRepost;
+        Amount = x.Header.Amount;
+        DurationKind = x.Header.DurationKind;
+        Applicants = x.Header.Applicants;
+        OfficeKind = x.Header.OfficeKind;
+        TimeKind = x.Header.TimeKind;
+        HourlyMin = x.Header.HourlyMin;
+        HourlyMax = x.Header.HourlyMax;
+        SalaryMin = x.Header.SalaryMin;
+        SalaryMax = x.Header.SalaryMax;
     }
 }
 

@@ -6,6 +6,7 @@ import { PaginatorComponent } from '../shared/paginator/paginator.component';
 import { DropdownComponent } from "../shared/dropdown/dropdown.component";
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-jobs',
@@ -15,6 +16,7 @@ import { coerceBooleanProperty } from '@angular/cdk/coercion';
     PaginatorComponent,
     DropdownComponent,
     ReactiveFormsModule,
+    RouterModule,
 ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',

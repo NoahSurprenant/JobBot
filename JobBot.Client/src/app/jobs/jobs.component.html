@@ -21,7 +21,7 @@
     <div class="font-bold flex items-center py-1.5">No Apply Reason</div>
 @for (job of current().results; track job.jobID) {
 <div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
-    {{job.jobID}}
+    <a [routerLink]="['/jobs', job.jobID]">{{job.jobID}}</a>
 </div>
 
 <div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">

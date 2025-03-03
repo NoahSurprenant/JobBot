@@ -32,6 +32,21 @@ public class ApiController : ControllerBase
         await _service.ExecuteAsync(job, location, maxApplyCount, maxReadCount, ct);
     }
 
+    [HttpGet]
+    public async Task Apply(long jobID, CancellationToken ct)
+    {
+        await _service.Apply(jobID, ct);
+    }
+
+    [HttpGet]
+    public async Task<string?> JobDetails(long jobID, CancellationToken ct)
+    {
+        return await _context.JobPostingDetails
+            .Where(x => x.JobPostingID == jobID)
+            .Select(x => x.Details)
+            .FirstOrDefaultAsync(ct);
+    }
+
     [HttpPost]
     public async Task<PaginationResult<JobDto>> Jobs([FromQuery] PaginationFilter filter, [FromBody] JobFilter jobFilter, CancellationToken ct)
     {
@@ -60,6 +75,11 @@ public class ApiController : ControllerBase
         if (questionFilter.Value is not null)
         {
             q = q.Where(x => x.Value == questionFilter.Value.Value);
+        }
+
+        if (questionFilter.JobID is not null)
+        {
+            q = q.Where(x => x.JobPostingQuestions.Any(x => x.JobPostingID == questionFilter.JobID));
         }
 
         var x = q.Select(x => new { x.Label, x.Value, x.QuestionKind, Options = (string[]?)null, InputType = (InputType?)x.InputType, x.JobPostingQuestions.Count })
@@ -122,6 +142,7 @@ public record QuestionDto(string Label, string? Value, QuestionKind QuestionKind
 public class QuestionFilter
 {
     public PropertyFilter? Value { get; set; }
+    public long? JobID { get; set; }
 }
 public class PropertyFilter
 {

@@ -1,13 +1,19 @@
 ﻿using OpenQA.Selenium;
 
 namespace JobBot;
-public class JobPage
+public class JobPage : IDetail
 {
     public long JobID;
     public Header Header { get; set; }
+    public JobDetails JobDetails { get; set; }
     public JobPage(IWebDriver driver)
     {
         JobID = long.Parse(driver.Url.TrimStart("https://www.linkedin.com/jobs/view/".ToCharArray()).Split('/')[0]);
-        Header = new Header(driver.FindElement(By.XPath("/html/body/div[6]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div")), JobID);
+        // Full path to header:             /html/body/div[5]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div
+        // To job-view-layout jobs-details  /html/body/div[5]/div[3]/div[2]/div/div/main/div[2]
+        // By class is                      //div[@class='job-view-layout jobs-details']
+        // So final xpath is                //div[@class='job-view-layout jobs-details']/div[1]/div/div[1]/div/div/div
+        Header = new Header(driver.FindElement(By.XPath("//div[@class='job-view-layout jobs-details']/div[1]/div/div[1]/div/div/div")), JobID);
+        JobDetails = new JobDetails(driver);
     }
 }

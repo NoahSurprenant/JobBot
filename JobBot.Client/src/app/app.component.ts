@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
 export class AppComponent {
   title = 'JobBot.Client';
 
-  routes: Routes = routes.filter(x => x.path != '');
+  routes: Routes = routes.filter(x => x.path != '' && !x.path?.endsWith(':jobID'));
 
   constructor() {}
 

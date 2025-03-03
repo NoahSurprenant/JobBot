@@ -1,7 +1,7 @@
 ﻿using OpenQA.Selenium;
 
 namespace JobBot;
-public class JobDetailPane
+public class JobDetailPane : IDetail
 {
     public Header Header { get; set; }
     public JobDetails JobDetails { get; set; }
@@ -23,7 +23,9 @@ public class JobDetails
         //Details = elements.Select(x => x.Text).ToArray();
 
         var element = driver.FindElement(By.XPath("//*[@id=\"job-details\"]/div[1]/p[1]"));
-        Details = element.Text;
+        //Details = element.Text;
+        //Details = element.GetAttribute("textContent");
+        Details = element.GetAttribute("innerHTML");
     }
 }
 

@@ -4,12 +4,15 @@
     <x-button [disabled]="x.isLoading() || !form().dirty" (clicked)="reset()">Discard</x-button>
 </div>
 
+<!-- No need to have so many filters when we are already filtering by job -->
+@if (!jobID()) {
 <div class="space-x-4 place-self-center mt-2">
     <x-button [disabled]="x.isLoading()" (clicked)="toggleValueFilter()">{{questionFilter().value == null ? 'Add' : 'Delete'}}</x-button>
     @if (questionFilter().value != null) {
         <x-input [formControl]="valueControl" class="inline-block"></x-input>
     }
 </div>
+}
 
 <form [formGroup]="form()">
 <div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)] mx-4">
