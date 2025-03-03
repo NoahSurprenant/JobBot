@@ -21,6 +21,7 @@ public class Service
     private readonly Random _random = new Random();
     //private readonly string _proxy;
     private readonly string _cache;
+    private bool demoMode = true;
 
     public Service(IDbContextFactory<DataContext> factory, ILogger<Service> logger, IConfiguration configuration)
     {
@@ -321,11 +322,16 @@ public class Service
         }
         else
         {
+            if (demoMode)
+                dbRow.NoApplyReason = "Demo Mode"; // Mark record as Demo Mode so we know we did not truly apply
             dbRow.Applied = true;
             return TryApplyResult.Success;
         }
     }
 
+    /// <summary>
+    /// False indicates there are missing answers. True indicates successful application was sent, or was ready to be sent but was in demo mode
+    /// </summary>
     private async Task<bool> DoStepper(ChromeDriver driver, DataContext context, long JobID, JobPosting dbRow)
     {
         while (true)
@@ -415,19 +421,24 @@ public class Service
                 throw new Exception("Cannot continue to next step or submit");
 
 
-            // For testing purposes we will just close the dialog instead and pretend we submit
-            var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
-            closeBtn.Click();
-            await Wait();
+            if (demoMode)
+            {
+                // For testing purposes we will just close the dialog instead and pretend we submit
+                var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
+                closeBtn.Click();
+                await Wait();
 
-            var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
-            discard.Click();
-            await Wait();
+                var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
+                discard.Click();
+                await Wait();
 
-            return true;
-
-            sumbitBtn.Click();
-            return true;
+                return true;
+            }
+            else
+            {
+                sumbitBtn.Click();
+                return true;
+            }
         }
     }
 
