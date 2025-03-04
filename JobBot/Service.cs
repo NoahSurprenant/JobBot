@@ -155,12 +155,34 @@ public class Service
     {
         using var context = _factory.CreateDbContext();
         var jobRows = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Take(readsRemaining);
-
         var width = (long)driver.ExecuteScript("return window.innerWidth;");
         var height = (long)driver.ExecuteScript("return window.innerHeight;");
 
         var list = new List<JobRowWithDetail>();
         var count = 0;
+
+        var indexes = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Take(readsRemaining).Select((_, i) => i + 1);
+        foreach (var i in indexes)
+        {
+            if (count >= appliesRemaining) // We ran out of tokens, we should stop applying now
+                continue;
+
+            var row = new Row(driver, i);
+
+            var JobID = row.JobID();
+            var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == JobID);
+            if (existing is not null || existing is not null && existing.NoApplyReason is not null)
+            {
+                continue;
+            }
+
+            if (row.InViewport(width, height) is false)
+            {
+                row.ScrollTo();
+            }
+            await Wait(1, 1);
+        }
+
         foreach (var x in jobRows)
         {
             if (count >= appliesRemaining) // We ran out of tokens, we should stop applying now
