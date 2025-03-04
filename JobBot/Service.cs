@@ -1,4 +1,5 @@
 using JobBot.Database;
+using JobBot.PageObjectModels;
 using Microsoft.EntityFrameworkCore;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
@@ -73,7 +74,8 @@ public class Service
         driver.Navigate().GoToUrl("https://linkedin.com/");
         await Wait();
 
-        await NavigateToJobsPage(driver);
+        var myPage = new SearchPage(driver);
+        await myPage.ClickJobTabButton();
 
         try
         {
@@ -117,15 +119,10 @@ public class Service
     /// <exception cref="Exception"></exception>
     private async Task<List<JobRowWithDetail>> Apply(ChromeDriver driver, string job, string location, int maxApplyCount, int maxReadCount)
     {
-        await Search(driver, job, location);
+        var myPage = new SearchPage(driver);
+        await myPage.Search(job, location);
 
-        //*[@id="main"]/div/div[2]/div[1]/div/ul
-
-        var xxx = new WebDriverWait(driver, TimeSpan.FromSeconds(30))
-            .Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")) is not null);
         var list = new List<JobRowWithDetail>();
-
-        await Task.Delay(2000);
 
         var loop = true;
         var applyCount = 0;
@@ -142,24 +139,8 @@ public class Service
 
             if (applyCount < maxApplyCount && readCount < maxReadCount)
             {
-                //var page = driver.FindElements(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[1]/div/div[3]/div[2]/ul/li/button"));
-                var page = driver.FindElements(By.XPath("//*[@id=\"jobs-search-results-footer\"]/div[2]/ul/li/button"));
-                var currentPage = page.Where(x => x.GetDomAttribute("aria-current") is not null).Select(x => int.Parse(x.GetDomAttribute("aria-label").Replace("Page ", ""))).FirstOrDefault();
-                var next = currentPage + 1;
-                var all = page.Select(x => int.Parse(x.GetDomAttribute("aria-label").Replace("Page ", ""))).ToArray();
-                if (all.Any(x => x == next))
-                {
-                    // Click next page
-                    var btn = page.FirstOrDefault(x => x.GetDomAttribute("aria-label") == "Page " + next)
-                        ?? throw new Exception("Failed to find button for Page " + next);
-                    btn.Click();
-                    // Wait until load
-                    await Wait(4, 6);
-                }
-                else // Ran out of pages
-                {
-                    loop = false;
-                }
+                // Continue loop if there was a new page, else don't
+                loop = await myPage.ClickNextPage();
             }
             else
             {
@@ -540,64 +521,6 @@ public class Service
             return jobID == JobID;
         });
         await Task.Delay(2000);
-    }
-
-    //https://devhints.io/xpath
-    private async Task NavigateToJobsPage(ChromeDriver driver)
-    {
-        var by = By.XPath("//*[@id=\"global-nav\"]/div/nav/ul/li[3]");
-        var e = driver.FindElement(by);
-        //var a = new Actions(driver);
-        //a.MoveToElement(e, 100, 0).Click().Perform();
-        e.Click();
-        await Wait();
-    }
-
-    /// <summary>
-    /// Submits search for a job at a location. Must already have /jobs loaded
-    /// </summary>
-    /// <param name="driver"></param>
-    /// <param name="job"></param>
-    /// <param name="location"></param>
-    /// <returns></returns>
-    private async Task Search(ChromeDriver driver, string job, string location, bool easyApply = true)
-    {
-        //*[@id="jobs-search-box-keyword-id-ember29"]
-        //*[@id="jobs-search-box-keyword-id-ember213"]
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-        var title = w.Until(x => x.FindElementOrDefault(By.XPath("//*[starts-with(@id,'jobs-search-box-keyword-id-ember')]"))!);
-        title.Click();
-        await title.SendHumanKeys(job);
-
-        //*[@id="jobs-search-box-location-id-ember29"]
-        var loc = driver.FindElement(By.XPath("//*[starts-with(@id,'jobs-search-box-location-id-ember')]"));
-        var valueEntered = loc.GetDomProperty("value");
-        // Not sure why this if chain is not working on my actual account but does on my alt
-        // On my main account it keeps reverting to United States for some reason
-        //if (valueEntered != location)
-        //{
-            await Wait();
-            loc.Click();
-            loc.Clear();
-            await loc.SendHumanKeys(location);
-            //loc.Click();
-            loc.SendKeys(Keys.Enter);
-        //}
-        //else
-        //{
-        //    // Location was already correct, so just hit enter on title
-        //    // instead of being weird and hitting enter on location when we are not touching it
-        //    title.SendKeys(Keys.Enter);
-        //}
-        await Wait();
-        //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[7]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
-        //var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/section/div/section/div/div/div/ul/li[8]/div/button")));
-        var ea = w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div/div[3]/div[4]/section/div/section/div/div/div/ul/li/div/button[text()=\"Easy Apply\"]")));
-        var eaValue = ea!.GetDomAttribute("aria-checked");
-        var eaBool = bool.Parse(eaValue);
-        if (eaBool != easyApply)
-            ea!.Click();
-        await Wait();
     }
 
     private async Task Wait(int min = 2, int max = 10)
