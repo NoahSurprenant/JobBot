@@ -1,15 +1,16 @@
 ﻿using OpenQA.Selenium;
 
-namespace JobBot;
+namespace JobBot.PageObjectModels;
 public class JobDetailPane : IDetail
 {
     public Header Header { get; set; }
+    public HeaderDto HeaderDto { get; set; }
     public JobDetails JobDetails { get; set; }
 
-    //*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div
-    public JobDetailPane(IWebDriver driver, IWebElement wrapper)
+    public JobDetailPane(IWebDriver driver, long jobID)
     {
-        Header = new Header(wrapper.FindElement(By.XPath("./div[1]/div/div[1]/div")));
+        Header = new Header(driver, HeaderType.DetailPane, jobID);
+        HeaderDto = Header.ToDto();
         JobDetails = new JobDetails(driver);
     }
 }

@@ -25,7 +25,7 @@ public class Row(IWebDriver driver, int index) : BasePage(driver)
 
     public void ScrollTo()
     {
-        new Actions(driver).ScrollToElement(Root()).Perform();
+        new Actions(Driver).ScrollToElement(Root()).Perform();
         //await Wait(1, 1);
     }
 
@@ -38,7 +38,7 @@ public class Row(IWebDriver driver, int index) : BasePage(driver)
 
     public async Task LoadDetailPane()
     {
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
         var JOBID = JobID(); // Load JobID once now, rather than in loop (not efficient) or after click (may throw DOM changed error)
         Root().Click();
 

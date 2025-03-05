@@ -1,5 +1,7 @@
 ﻿
 
+using JobBot.PageObjectModels;
+
 namespace JobBot;
 public class JobRowWithDetail
 {
@@ -15,5 +17,6 @@ public class JobRowWithDetail
 public interface IDetail
 {
     Header Header { get; }
+    HeaderDto HeaderDto { get; }
     JobDetails JobDetails { get; }
 }

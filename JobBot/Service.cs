@@ -3,8 +3,6 @@ using JobBot.PageObjectModels;
 using Microsoft.EntityFrameworkCore;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Interactions;
-using OpenQA.Selenium.Support.UI;
 using System.Text.RegularExpressions;
 
 namespace JobBot;
@@ -56,7 +54,7 @@ public class Service
         if (existing is null)
             context.Add(dbRow);
 
-        var result = await TryApply(driver, context, jobID, existing, x, dbRow);
+        var result = await TryApply(driver, context, jobID, existing, x.Header, dbRow);
 
         context.SaveChanges();
         transaction.Commit();
@@ -154,7 +152,6 @@ public class Service
     private async Task<JobRowWithDetail[]> CoreLoop(ChromeDriver driver, int appliesRemaining, int readsRemaining)
     {
         using var context = _factory.CreateDbContext();
-        var jobRows = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Take(readsRemaining);
         var width = (long)driver.ExecuteScript("return window.innerWidth;");
         var height = (long)driver.ExecuteScript("return window.innerHeight;");
 
@@ -185,8 +182,7 @@ public class Service
             await row.LoadDetailPane();
 
             var rowDto = row.ToDto();
-            var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-            var item = new JobRowWithDetail(rowDto, new(driver, detailContent));
+            var item = new JobRowWithDetail(rowDto, new(driver, JobID));
 
             using var transaction = context.Database.BeginTransaction();
 
@@ -201,7 +197,7 @@ public class Service
             if (existing is null)
                 context.Add(dbRow);
 
-            var result = await TryApply(driver, context, JobID, existing, item.JobDetailPane, dbRow);
+            var result = await TryApply(driver, context, JobID, existing, item.JobDetailPane.Header, dbRow);
 
             if (result is TryApplyResult.Success)
             {
@@ -236,7 +232,7 @@ public class Service
         Success,
     }
 
-    private async Task<TryApplyResult> TryApply(ChromeDriver driver, DataContext context, long JobID, JobPosting? existing, IDetail item, JobPosting dbRow)
+    private async Task<TryApplyResult> TryApply(ChromeDriver driver, DataContext context, long JobID, JobPosting? existing, Header header, JobPosting dbRow)
     {
         if (dbRow.Applied)
         {
@@ -263,7 +259,7 @@ public class Service
         }
 
         // Passed all check, try to apply
-        await item.Header.ClickEasyApply(driver);
+        await header.ClickEasyApply(driver);
         await Wait(1, 1);
 
         if (existing is not null)

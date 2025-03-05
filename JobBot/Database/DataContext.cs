@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using JobBot.PageObjectModels;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace JobBot.Database;
@@ -274,18 +275,18 @@ public class JobPosting
     {
         JobPostingDetail ??= new JobPostingDetail();
         JobPostingDetail.Details = x.JobDetails.Details;
-        JobPostingID = x.Header.JobID;
-        CompanyLink = x.Header.CompanyLink;
-        IsRepost = x.Header.IsRepost;
-        Amount = x.Header.Amount;
-        DurationKind = x.Header.DurationKind;
-        Applicants = x.Header.Applicants;
-        OfficeKind = x.Header.OfficeKind;
-        TimeKind = x.Header.TimeKind;
-        HourlyMin = x.Header.HourlyMin;
-        HourlyMax = x.Header.HourlyMax;
-        SalaryMin = x.Header.SalaryMin;
-        SalaryMax = x.Header.SalaryMax;
+        JobPostingID = x.HeaderDto.JobID;
+        CompanyLink = x.HeaderDto.CompanyLink;
+        IsRepost = x.HeaderDto.IsRepost;
+        Amount = x.HeaderDto.Amount;
+        DurationKind = x.HeaderDto.DurationKind;
+        Applicants = x.HeaderDto.Applicants;
+        OfficeKind = x.HeaderDto.OfficeKind;
+        TimeKind = x.HeaderDto.TimeKind;
+        HourlyMin = x.HeaderDto.HourlyMin;
+        HourlyMax = x.HeaderDto.HourlyMax;
+        SalaryMin = x.HeaderDto.SalaryMin;
+        SalaryMax = x.HeaderDto.SalaryMax;
     }
 }
 

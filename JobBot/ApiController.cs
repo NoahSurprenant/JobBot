@@ -1,4 +1,5 @@
 ﻿using JobBot.Database;
+using JobBot.PageObjectModels;
 using JobBot.Pagination;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
