@@ -181,43 +181,12 @@ public class Service
                 row.ScrollTo();
             }
             await Wait(1, 1);
-        }
 
-        foreach (var x in jobRows)
-        {
-            if (count >= appliesRemaining) // We ran out of tokens, we should stop applying now
-                continue;
+            await row.LoadDetailPane();
 
-            var JobID = long.Parse(x.GetDomAttribute("data-occludable-job-id"));
-            var existing = context.JobPostings.FirstOrDefault(x => x.JobPostingID == JobID);
-            if (existing is not null || existing is not null && existing.NoApplyReason is not null)
-            {
-                continue;
-            }
-
-            var location = x.Location;
-            var size = x.Size;
-
-            var inViewport = (location.X >= 0 &&
-                                location.Y >= 0 &&
-                                location.X + size.Width <= width &&
-                                location.Y + size.Height <= height);
-
-            if (inViewport is false)
-            {
-                new Actions(driver).ScrollToElement(x).Perform();
-                //await Wait(1, 1);
-            }
-            await Wait(1, 1);
-
-            var row = new JobRow(x);
-
-            await LoadDetailPane(driver, x, row.JobID);
-
-
-
+            var rowDto = row.ToDto();
             var detailContent = driver.FindElement(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div"));
-            var item = new JobRowWithDetail(row, new(driver, detailContent));
+            var item = new JobRowWithDetail(rowDto, new(driver, detailContent));
 
             using var transaction = context.Database.BeginTransaction();
 
@@ -236,7 +205,7 @@ public class Service
 
             if (result is TryApplyResult.Success)
             {
-                row.Applied = true;
+                rowDto.Applied = true;
                 count++;
                 list.Add(item);
             }
@@ -520,29 +489,6 @@ public class Service
 
             context.SaveChanges();
         }
-    }
-
-    /// <summary>
-    /// Click row in left side pane and waits until right pane has loaded
-    /// </summary>
-    /// <param name="driver"></param>
-    /// <param name="x"></param>
-    /// <param name="JobID"></param>
-    private static async Task LoadDetailPane(IWebDriver driver, IWebElement x, long JobID)
-    {
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-        x.Click();
-
-        var xxx = w.Until(x =>
-        {
-            //var jobTitleElement = x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
-            var jobTitleElement = x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
-            if (jobTitleElement is null)
-                return false;
-            var jobID = long.Parse(jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
-            return jobID == JobID;
-        });
-        await Task.Delay(2000);
     }
 
     private async Task Wait(int min = 2, int max = 10)

@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Support.UI;
 using System.Text.RegularExpressions;
 
 namespace JobBot.PageObjectModels;
@@ -35,6 +36,24 @@ public class Row(IWebDriver driver, int index) : BasePage(driver)
         return atr is not null;
     }
 
+    public async Task LoadDetailPane()
+    {
+        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        var JOBID = JobID(); // Load JobID once now, rather than in loop (not efficient) or after click (may throw DOM changed error)
+        Root().Click();
+
+        var xxx = w.Until(x =>
+        {
+            //var jobTitleElement = x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[4]/div/div/main/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
+            var jobTitleElement = x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div/div[2]/div[2]/div/div[2]/div/div/div[1]/div/div[1]/div/div[1]/div/div[2]/div/h1/a"));
+            if (jobTitleElement is null)
+                return false;
+            var jobID = long.Parse(jobTitleElement.GetDomAttribute("href").TrimStart("/jobs/view/".ToCharArray()).Split('/')[0]);
+            return jobID == JOBID;
+        });
+        await Task.Delay(2000);
+    }
+
     public long JobID() => long.Parse(Root().GetDomAttribute("data-occludable-job-id"));
     public string JobTitle() => Root().FindElement(By.XPath("./div/div/div[1]/div/div[2]/div[1]/a/span[1]/strong")).Text;
     public string CompanyName() => Root().FindElement(By.XPath("./div/div/div[1]/div[1]/div[2]/div[2]/span")).Text;
@@ -68,4 +87,28 @@ public class Row(IWebDriver driver, int index) : BasePage(driver)
     public bool Viewed() => BottomRow().FindElementOrDefault(By.XPath("./li[text()=\"Viewed\"]")) is not null;
     public bool Promoted() => BottomRow().FindElementOrDefault(By.XPath("./li[span[text()=\"Promoted\"]]")) is not null;
     public bool EasyApply() => BottomRow().FindElementOrDefault(By.XPath("./li/span[text()=\"Easy Apply\"]")) is not null;
+
+    public RowDto ToDto()
+    {
+        return new RowDto()
+        {
+            JobID = JobID(),
+            JobTitle = JobTitle(),
+            CompanyName = CompanyName(),
+            Location = Location(),
+            HourlyMin = HourlyMin(),
+            HourlyMax = HourlyMax(),
+            SalaryMin = SalaryMin(),
+            SalaryMax = SalaryMax(),
+            Has401k = Has401k(),
+            Dental = Dental(),
+            Medical = Medical(),
+            Vision = Vision(),
+            OtherBenefitsCount = OtherBenefitsCount(),
+            Applied = Applied(),
+            Viewed = Viewed(),
+            Promoted = Promoted(),
+            EasyApply = EasyApply(),
+        };
+    }
 }

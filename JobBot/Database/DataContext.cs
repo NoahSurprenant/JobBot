@@ -256,7 +256,7 @@ public class JobPosting
         return this;
     }
 
-    private void SetRow(JobRow x)
+    private void SetRow(RowDto x)
     {
         JobPostingID = x.JobID;
         CompanyName = x.CompanyName;
