@@ -1,7 +1,6 @@
 using JobBot.Database;
 using JobBot.PageObjectModels;
 using Microsoft.EntityFrameworkCore;
-using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Text.RegularExpressions;
 
@@ -158,7 +157,7 @@ public class Service
         var list = new List<JobRowWithDetail>();
         var count = 0;
 
-        var indexes = driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Take(readsRemaining).Select((_, i) => i + 1);
+        var indexes = new SearchPage(driver).GetJobIndexes().Take(readsRemaining);
         foreach (var i in indexes)
         {
             if (count >= appliesRemaining) // We ran out of tokens, we should stop applying now
@@ -259,7 +258,7 @@ public class Service
         }
 
         // Passed all check, try to apply
-        await header.ClickEasyApply(driver);
+        await header.ClickEasyApply();
         await Wait(1, 1);
 
         if (existing is not null)
@@ -279,13 +278,7 @@ public class Service
         {
             dbRow.NoApplyReason = "Missing answers";
 
-            var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
-            closeBtn.Click();
-            await Wait();
-
-            var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
-            discard.Click();
-            await Wait();
+            await new EasyApplyModal(driver).Dismiss();
             return TryApplyResult.MissingAnswers;
         }
         else
@@ -302,27 +295,12 @@ public class Service
     /// </summary>
     private async Task<bool> DoStepper(ChromeDriver driver, DataContext context, long JobID, JobPosting dbRow)
     {
+        var easyApplyModel = new EasyApplyModal(driver);
         while (true)
         {
-            var header = driver.FindElementOrDefault(By.XPath("//form[1]/div[1]/div[1]/h3[1]"));
-            if (header is null)
-            {
-                // Might want a better way to handle these non-form headers...
-                header = driver.FindElementOrDefault(By.XPath("//h3/span[text()=\"Work experience\"]"));
-                if (header is null)
-                {
-                    header = driver.FindElementOrDefault(By.XPath("//h3/span[text()=\"Education\"]"));
-                    if (header is null)
-                    {
-                        // Rare but sometimes we get this odd 'Review your application' page that is not part of form.
-                        header = driver.FindElement(By.XPath("//h3[text()=\"Review your application\"]"));
-                    }
-                }
-                
-            }
-            var headerText = header.Text;
+            var headerText = easyApplyModel.GetHeader();
 
-            UncheckFollow(driver);
+            easyApplyModel.UncheckFollow();
             if (headerText is "Contact info" or "Additional Questions" or "Work authorization" or "Home address")
             {
                 var qp = headerText switch
@@ -350,13 +328,13 @@ public class Service
                 }
                     
 
-                var result = await ClickContinue(driver);
+                var result = await easyApplyModel.ClickContinue(demoMode);
                 if (result)
                     return true;
             }
             else if (headerText is "Resume" or "Education" or "Review" or "Review your application" or "Work experience")
             {
-                var result = await ClickContinue(driver);
+                var result = await easyApplyModel.ClickContinue(demoMode);
                 if (result)
                     return true;
                 else if (headerText is "Review" or "Review your application")
@@ -370,60 +348,6 @@ public class Service
         }
     }
 
-    /// <summary>
-    /// Returns true if submit. False if just continuing to next step
-    /// </summary>
-    private async Task<bool> ClickContinue(ChromeDriver driver)
-    {
-        var continueBtn = driver.FindElementOrDefault(By.XPath("//button[@aria-label='Continue to next step']"))
-            ?? driver.FindElementOrDefault(By.XPath("//button[@aria-label='Review your application']"));
-        if (continueBtn is not null)
-        {
-            continueBtn.Click();
-            return false;
-        }
-        else
-        {
-            var sumbitBtn = driver.FindElementOrDefault(By.XPath("//button[@aria-label='Submit application']"));
-            if (sumbitBtn is null)
-                throw new Exception("Cannot continue to next step or submit");
-
-
-            if (demoMode)
-            {
-                // For testing purposes we will just close the dialog instead and pretend we submit
-                var closeBtn = driver.FindElement(By.XPath("//button[@aria-label='Dismiss']"));
-                closeBtn.Click();
-                await Wait();
-
-                var discard = driver.FindElement(By.XPath("//button[@data-control-name='discard_application_confirm_btn']"));
-                discard.Click();
-                await Wait();
-
-                return true;
-            }
-            else
-            {
-                sumbitBtn.Click();
-                return true;
-            }
-        }
-    }
-
-    private static void UncheckFollow(ChromeDriver driver)
-    {
-        var follow = driver.FindElementOrDefault(By.XPath("//*[@id=\"follow-company-checkbox\"]"));
-        if (follow is not null)
-        {
-            var followLabel = driver.FindElement(By.XPath("//label[@for='follow-company-checkbox']"));
-            var before = follow.Selected;
-            if (follow.Selected is true)
-            {
-                followLabel.Click();
-            }
-            var after = follow.Selected;
-        }
-    }
 
     private static async Task UpsertQuestions(DataContext context, JobPosting dbRow, Questions questions, QuestionPage questionPage)
     {
@@ -502,62 +426,6 @@ public class Service
 
 public static class WebElementExt
 {
-    private readonly static Random _random = new();
-
-    public static async Task SendHumanKeys(this IWebElement element, string text)
-    {
-        foreach (var t in text)
-        {
-            element.SendKeys(t.ToString());
-            await Task.Delay(TimeSpan.FromMilliseconds(_random.Next(20, 150)));
-        }
-    }
-
-    //public static ReadOnlyCollection<IWebElement> FindElementsAsWrapped(this IWebElement element, By by)
-    //{
-    //    var result = element.FindElements(by);
-    //    return result.Select(x => new ElementWrapper())
-    //    return new ElementWrapper(() => element.FindElements(by));
-    //}
-
-    public static IWebElement FindElementAsWrapper(this IWebElement element, By by)
-    {
-        return new ElementWrapper(() => element.FindElement(by));
-    }
-
-    public static IWebElement? FindElementOrDefaultAsWrapper(this IWebElement element, By by)
-    {
-        var wrapped = new NullableElementWrapper(() => element.FindElementOrDefault(by));
-        if (wrapped.IsNull)
-            return null;
-        else
-            return wrapped;
-    }
-
-    public static IWebElement? FindElementOrDefault(this IWebElement element, By by)
-    {
-        try
-        {
-            return element.FindElement(by);
-        }
-        catch (NoSuchElementException)
-        {
-            return null;
-        }
-    }
-
-    public static IWebElement? FindElementOrDefault(this IWebDriver element, By by)
-    {
-        try
-        {
-            return element.FindElement(by);
-        }
-        catch (NoSuchElementException)
-        {
-            return null;
-        }
-    }
-
     public static Range? GetSalaryRange(this string input)
     {
         input = input.TrimStart("Starting at ".ToCharArray());

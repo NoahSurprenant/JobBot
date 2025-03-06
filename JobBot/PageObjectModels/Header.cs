@@ -14,24 +14,24 @@ public class Header(IWebDriver driver, HeaderType HeaderType, long JobID) : Base
 
     private IWebElement Root() => Driver.FindElement(ByRoot);
 
-    public void Click(IWebDriver driver)
+    public void Click()
     {
         _jobTitleElement.Click();
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
         //w.Until(x => x.FindElementOrDefault(By.XPath("/html/body/div[6]/div[3]/div[2]/div/div/main/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
         w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"main\"]/div[2]/div[1]/div/div[1]/div/div/div")) is not null);
     }
 
-    public async Task ClickEasyApply(IWebDriver driver)
+    public async Task ClickEasyApply()
     {
         if (_applyElement is null)
             throw new Exception("Cannot apply to job there is not easy apply " + JobID);
         _applyElement.Click();
         await Task.Delay(1000);
-        var btn = driver.FindElementOrDefault(By.XPath("//span[text()=\"Continue applying\"]/.."));
+        var btn = Driver.FindElementOrDefault(By.XPath("//span[text()=\"Continue applying\"]/.."));
         if (btn is not null)
             btn.Click();
-        var w = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+        var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(30));
         w.Until(x => x.FindElementOrDefault(By.XPath("//*[@id=\"jobs-apply-header\"]"))?.Text == "Apply to " + CompanyName);
     }
 

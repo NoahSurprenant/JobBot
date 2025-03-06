@@ -99,4 +99,9 @@ public class SearchPage(IWebDriver driver) : BasePage(driver: driver)
             return false;
         }
     }
+
+    public IEnumerable<int> GetJobIndexes()
+    {
+        return driver.FindElements(By.XPath("//*[@id=\"main\"]/div/div[2]/div[1]/div/ul/li")).Select((_, i) => i + 1);
+    }
 }
