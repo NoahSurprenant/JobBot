@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobBot.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250302031727_InitialMigration")]
+    [Migration("20250310031201_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -26,6 +26,9 @@ namespace JobBot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Applicants")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("Applied")
@@ -44,11 +47,20 @@ namespace JobBot.Migrations
                     b.Property<bool>("Dental")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("DurationKind")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("EasyApply")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("Has401k")
                         .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("HourlyMax")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("HourlyMin")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsRepost")
                         .HasColumnType("INTEGER");
@@ -69,6 +81,18 @@ namespace JobBot.Migrations
 
                     b.Property<string>("NoApplyReason")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("OfficeKind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("SalaryMax")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("SalaryMin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TimeKind")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Vision")
                         .HasColumnType("INTEGER");

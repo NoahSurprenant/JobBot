@@ -199,14 +199,14 @@ public class JobPosting
     public string Location { get; set; } = null!;
     public bool IsRepost { get; set; }
     public int Amount { get; set; }
-    public DurationKind DurationKind;
-    public int Applicants;
-    public OfficeKind OfficeKind;
-    public TimeKind TimeKind;
-    public decimal? HourlyMin;
-    public decimal? HourlyMax;
-    public decimal? SalaryMin;
-    public decimal? SalaryMax;
+    public DurationKind DurationKind { get; set; }
+    public int Applicants { get; set; }
+    public OfficeKind OfficeKind { get; set; }
+    public TimeKind TimeKind { get; set; }
+    public decimal? HourlyMin { get; set; }
+    public decimal? HourlyMax { get; set; }
+    public decimal? SalaryMin { get; set; }
+    public decimal? SalaryMax { get; set; }
     public bool Has401k { get; set; }
     public bool Dental { get; set; }
     public bool Medical { get; set; }
