@@ -103,16 +103,14 @@ namespace JobBot.Migrations
                     Label = table.Column<string>(type: "TEXT", nullable: false),
                     InputType = table.Column<int>(type: "INTEGER", nullable: false),
                     Value = table.Column<string>(type: "TEXT", nullable: true),
-                    OptionValue = table.Column<string>(type: "TEXT", nullable: true),
-                    OptionLabel = table.Column<string>(type: "TEXT", nullable: true),
-                    OptionQuestionKind = table.Column<int>(type: "INTEGER", nullable: true)
+                    OptionValue = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Questions", x => new { x.Label, x.QuestionKind });
                     table.ForeignKey(
-                        name: "FK_Questions_Options_OptionValue_OptionLabel_OptionQuestionKind",
-                        columns: x => new { x.OptionValue, x.OptionLabel, x.OptionQuestionKind },
+                        name: "FK_Questions_Options_OptionValue_Label_QuestionKind",
+                        columns: x => new { x.OptionValue, x.Label, x.QuestionKind },
                         principalTable: "Options",
                         principalColumns: new[] { "Value", "Label", "QuestionKind" });
                 });
@@ -128,9 +126,10 @@ namespace JobBot.Migrations
                 columns: new[] { "Label", "QuestionKind" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Questions_OptionValue_OptionLabel_OptionQuestionKind",
+                name: "IX_Questions_OptionValue_Label_QuestionKind",
                 table: "Questions",
-                columns: new[] { "OptionValue", "OptionLabel", "OptionQuestionKind" });
+                columns: new[] { "OptionValue", "Label", "QuestionKind" },
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_JobPostingQuestions_Questions_Label_QuestionKind",

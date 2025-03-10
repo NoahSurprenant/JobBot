@@ -385,7 +385,7 @@ public class Service
                 // Possible circular reference requires these to be seperate writes
                 if (question.Input is not null && (question.Input is not "Select an option" || question.QuestionKind is not QuestionKind.ComboBox))
                 {
-                    x.Value = question.Input;
+                    x.SetValue(question.Input);
                     context.SaveChanges();
                 }
             }

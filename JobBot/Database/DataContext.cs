@@ -92,10 +92,10 @@ public class OptionConfiguration : IEntityTypeConfiguration<Option>
             .HasForeignKey(x => new { x.Label, x.QuestionKind });
 
         // Cannot do this foreign key because not all questions use options for their value.
-        //entity.HasOne(x => x.SelectedQuestion)
-        //    .WithOne(x => x.Option)
-        //    .HasForeignKey<Question>(x => new { x.Value, x.Label, x.QuestionKind })
-        //    .IsRequired(false);
+        entity.HasOne(x => x.SelectedQuestion)
+            .WithOne(x => x.Option)
+            .HasForeignKey<Question>(x => new { x.OptionValue, x.Label, x.QuestionKind })
+            .IsRequired(false);
     }
 }
 
@@ -137,7 +137,8 @@ public class Question
     public InputType InputType { get; set; }
     public QuestionKind QuestionKind { get; set; }
     public string Label { get; set; } = null!;
-    public string? Value { get; set; }
+    public string? Value { get; private set; }
+    public string? OptionValue { get; private set; }
     /// <summary>
     /// May not be null on Radio or ComboBox
     /// </summary>
@@ -147,6 +148,19 @@ public class Question
     /// Should have values for Radio or ComboBox
     /// </summary>
     public HashSet<Option> Options { get; set; }
+
+    public void SetValue(string? value)
+    {
+        Value = value;
+        if (QuestionKind is QuestionKind.ComboBox or QuestionKind.Radio)
+        {
+            OptionValue = value;
+        }
+        else
+        {
+            OptionValue = null;
+        }
+    }
 }
 
 public class Option
@@ -155,7 +169,7 @@ public class Option
     public QuestionKind QuestionKind { get; set; }
     public string Value { get; set; } = null!;
     public Question Question { get; set; } = null!;
-    //public Question? SelectedQuestion { get; set; }
+    public Question? SelectedQuestion { get; set; }
 }
 
 public enum InputType

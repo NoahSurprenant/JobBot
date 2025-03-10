@@ -163,12 +163,6 @@ namespace JobBot.Migrations
                     b.Property<int>("InputType")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("OptionLabel")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("OptionQuestionKind")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("OptionValue")
                         .HasColumnType("TEXT");
 
@@ -177,7 +171,8 @@ namespace JobBot.Migrations
 
                     b.HasKey("Label", "QuestionKind");
 
-                    b.HasIndex("OptionValue", "OptionLabel", "OptionQuestionKind");
+                    b.HasIndex("OptionValue", "Label", "QuestionKind")
+                        .IsUnique();
 
                     b.ToTable("Questions", (string)null);
                 });
@@ -224,8 +219,8 @@ namespace JobBot.Migrations
             modelBuilder.Entity("JobBot.Database.Question", b =>
                 {
                     b.HasOne("JobBot.Database.Option", "Option")
-                        .WithMany()
-                        .HasForeignKey("OptionValue", "OptionLabel", "OptionQuestionKind");
+                        .WithOne("SelectedQuestion")
+                        .HasForeignKey("JobBot.Database.Question", "OptionValue", "Label", "QuestionKind");
 
                     b.Navigation("Option");
                 });
@@ -235,6 +230,11 @@ namespace JobBot.Migrations
                     b.Navigation("JobPostingDetail");
 
                     b.Navigation("JobPostingQuestions");
+                });
+
+            modelBuilder.Entity("JobBot.Database.Option", b =>
+                {
+                    b.Navigation("SelectedQuestion");
                 });
 
             modelBuilder.Entity("JobBot.Database.Question", b =>
