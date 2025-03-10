@@ -1,4 +1,5 @@
 ﻿using JobBot.Database;
+using JobBot.PageObjectModels;
 using JobBot.Pagination;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -108,8 +109,8 @@ public class ApiController : ControllerBase
                 if (db.Options.Any(x => x.Value == question.Value) is false)
                     throw new Exception($"{question.Value} is not a valid value for {db.Label} | {question.QuestionKind}");
             }
-            
-            db.Value = question.Value;
+
+            db.SetValue(question.Value);
             await _context.SaveChangesAsync(ct);
         }
     }

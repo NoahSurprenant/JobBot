@@ -1,10 +1,11 @@
 ﻿using OpenQA.Selenium;
 
-namespace JobBot;
+namespace JobBot.PageObjectModels;
 public class JobPage : IDetail
 {
     public long JobID;
     public Header Header { get; set; }
+    public HeaderDto HeaderDto { get; set; }
     public JobDetails JobDetails { get; set; }
     public JobPage(IWebDriver driver)
     {
@@ -13,7 +14,8 @@ public class JobPage : IDetail
         // To job-view-layout jobs-details  /html/body/div[5]/div[3]/div[2]/div/div/main/div[2]
         // By class is                      //div[@class='job-view-layout jobs-details']
         // So final xpath is                //div[@class='job-view-layout jobs-details']/div[1]/div/div[1]/div/div/div
-        Header = new Header(driver.FindElement(By.XPath("//div[@class='job-view-layout jobs-details']/div[1]/div/div[1]/div/div/div")), JobID);
+        Header = new Header(driver, HeaderType.JobPage, JobID);
+        HeaderDto = Header.ToDto();
         JobDetails = new JobDetails(driver);
     }
 }

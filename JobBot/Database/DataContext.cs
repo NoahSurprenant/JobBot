@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using JobBot.PageObjectModels;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace JobBot.Database;
@@ -91,10 +92,10 @@ public class OptionConfiguration : IEntityTypeConfiguration<Option>
             .HasForeignKey(x => new { x.Label, x.QuestionKind });
 
         // Cannot do this foreign key because not all questions use options for their value.
-        //entity.HasOne(x => x.SelectedQuestion)
-        //    .WithOne(x => x.Option)
-        //    .HasForeignKey<Question>(x => new { x.Value, x.Label, x.QuestionKind })
-        //    .IsRequired(false);
+        entity.HasOne(x => x.SelectedQuestion)
+            .WithOne(x => x.Option)
+            .HasForeignKey<Question>(x => new { x.OptionValue, x.Label, x.QuestionKind })
+            .IsRequired(false);
     }
 }
 
@@ -136,7 +137,8 @@ public class Question
     public InputType InputType { get; set; }
     public QuestionKind QuestionKind { get; set; }
     public string Label { get; set; } = null!;
-    public string? Value { get; set; }
+    public string? Value { get; private set; }
+    public string? OptionValue { get; private set; }
     /// <summary>
     /// May not be null on Radio or ComboBox
     /// </summary>
@@ -146,6 +148,19 @@ public class Question
     /// Should have values for Radio or ComboBox
     /// </summary>
     public HashSet<Option> Options { get; set; }
+
+    public void SetValue(string? value)
+    {
+        Value = value;
+        if (QuestionKind is QuestionKind.ComboBox or QuestionKind.Radio)
+        {
+            OptionValue = value;
+        }
+        else
+        {
+            OptionValue = null;
+        }
+    }
 }
 
 public class Option
@@ -154,7 +169,7 @@ public class Option
     public QuestionKind QuestionKind { get; set; }
     public string Value { get; set; } = null!;
     public Question Question { get; set; } = null!;
-    //public Question? SelectedQuestion { get; set; }
+    public Question? SelectedQuestion { get; set; }
 }
 
 public enum InputType
@@ -198,14 +213,14 @@ public class JobPosting
     public string Location { get; set; } = null!;
     public bool IsRepost { get; set; }
     public int Amount { get; set; }
-    public DurationKind DurationKind;
-    public int Applicants;
-    public OfficeKind OfficeKind;
-    public TimeKind TimeKind;
-    public decimal? HourlyMin;
-    public decimal? HourlyMax;
-    public decimal? SalaryMin;
-    public decimal? SalaryMax;
+    public DurationKind DurationKind { get; set; }
+    public int Applicants { get; set; }
+    public OfficeKind OfficeKind { get; set; }
+    public TimeKind TimeKind { get; set; }
+    public decimal? HourlyMin { get; set; }
+    public decimal? HourlyMax { get; set; }
+    public decimal? SalaryMin { get; set; }
+    public decimal? SalaryMax { get; set; }
     public bool Has401k { get; set; }
     public bool Dental { get; set; }
     public bool Medical { get; set; }
@@ -256,7 +271,7 @@ public class JobPosting
         return this;
     }
 
-    private void SetRow(JobRow x)
+    private void SetRow(RowDto x)
     {
         JobPostingID = x.JobID;
         CompanyName = x.CompanyName;
@@ -274,18 +289,18 @@ public class JobPosting
     {
         JobPostingDetail ??= new JobPostingDetail();
         JobPostingDetail.Details = x.JobDetails.Details;
-        JobPostingID = x.Header.JobID;
-        CompanyLink = x.Header.CompanyLink;
-        IsRepost = x.Header.IsRepost;
-        Amount = x.Header.Amount;
-        DurationKind = x.Header.DurationKind;
-        Applicants = x.Header.Applicants;
-        OfficeKind = x.Header.OfficeKind;
-        TimeKind = x.Header.TimeKind;
-        HourlyMin = x.Header.HourlyMin;
-        HourlyMax = x.Header.HourlyMax;
-        SalaryMin = x.Header.SalaryMin;
-        SalaryMax = x.Header.SalaryMax;
+        JobPostingID = x.HeaderDto.JobID;
+        CompanyLink = x.HeaderDto.CompanyLink;
+        IsRepost = x.HeaderDto.IsRepost;
+        Amount = x.HeaderDto.Amount;
+        DurationKind = x.HeaderDto.DurationKind;
+        Applicants = x.HeaderDto.Applicants;
+        OfficeKind = x.HeaderDto.OfficeKind;
+        TimeKind = x.HeaderDto.TimeKind;
+        HourlyMin = x.HeaderDto.HourlyMin;
+        HourlyMax = x.HeaderDto.HourlyMax;
+        SalaryMin = x.HeaderDto.SalaryMin;
+        SalaryMax = x.HeaderDto.SalaryMax;
     }
 }
 
