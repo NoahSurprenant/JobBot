@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, input, OnInit, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, OnInit, resource, signal } from '@angular/core';
 import { ToastService } from '../toast.service';
 import { ButtonComponent } from '../shared/button/button.component';
 import { InputComponent } from '../shared/input/input.component';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { QuestionBase, QuestionControlService } from '../questionControl.service';
 import { DropdownComponent } from '../shared/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
@@ -31,9 +31,18 @@ import { RouterModule } from '@angular/router';
 export class QuestionsComponent implements OnInit {
   jobID = input<number>();
 
-  constructor(private http: HttpClient, private toastService: ToastService, private qcs: QuestionControlService) {
+  formArray: FormArray<FormGroup<QuestionFormRow>>;
+
+  constructor(private http: HttpClient,
+    private toastService: ToastService,
+    private qcs: QuestionControlService,
+    private fb: FormBuilder) {
+      
+    this.formArray = fb.nonNullable.array<FormGroup<QuestionFormRow>>([]);
+
     effect(() => {
       const x = this.x.value();
+      console.log(x);
       if (x)
         this.current.set(x);
     })
@@ -45,6 +54,18 @@ export class QuestionsComponent implements OnInit {
         x.jobID = this.jobID() ?? null;
         return {...x};
       });
+    });
+
+    effect(() => {
+      const x = this.current();
+      const map = x.results.map(x => {
+        const newObj: QuestionFormRow = {
+          dto: fb.nonNullable.control(x),
+          control: fb.nonNullable.control(x.value),
+        }
+        return fb.nonNullable.group<QuestionFormRow>(newObj);
+      });
+      this.formArray = fb.nonNullable.array<FormGroup<QuestionFormRow>>(map);
     });
   }
 
@@ -86,25 +107,28 @@ export class QuestionsComponent implements OnInit {
   }
 
   reset(): void {
-    this.form().reset();
+    //this.clicked();
+    // TODO: do we even need this if we can reload??
+    this.formArray.reset();
   }
 
   save(): void {
     const dirtyControls: { [key: string]: string | null } = {};
     const dirtyDto: QuestionDto[] = [];
 
-    Object.keys(this.form().controls).forEach(controlName => {
-      const control = this.form().get(controlName);
-      if (control && control.dirty) {
-        dirtyControls[controlName] = control.value;
-        let dto = this.current().results.find(x => x.guid == controlName);
-        if (dto) {
-          dto = {...dto};
-          dto.value = control.value;
-          dirtyDto.push(dto);
-        }
-      }
-    });
+    // TODO: Fix this!
+    // Object.keys(this.form().controls).forEach(controlName => {
+    //   const control = this.form().get(controlName);
+    //   if (control && control.dirty) {
+    //     dirtyControls[controlName] = control.value;
+    //     let dto = this.current().results.find(x => x.guid == controlName);
+    //     if (dto) {
+    //       dto = {...dto};
+    //       dto.value = control.value;
+    //       dirtyDto.push(dto);
+    //     }
+    //   }
+    // });
 
     console.log(dirtyControls);
     console.log(dirtyDto);
@@ -147,15 +171,12 @@ export class QuestionsComponent implements OnInit {
         })
         .then(x => x.json() as Promise<PaginationResult<QuestionDto>>)
         .then(x => {
-          x.results.forEach(x => x.guid = this.uuidv4());
+          // TODO: Maybe add backend guid???
+          x.results.forEach(x => x.guid = x.label.replaceAll('.', ''));
+          //x.results.forEach(x => x.guid = this.uuidv4());
           return x;
         });
     },
-  });
-
-  form = computed(() => {
-    // TODO: hitting refresh button breaks this form. No longer tracks dirty correctly. Look into this
-    return this.qcs.toFormGroup(this.toQuestionBase(this.current().results));
   });
 
   current = signal<PaginationResult<QuestionDto>>({ totalCount: 0, results: []});
@@ -179,6 +200,16 @@ export interface QuestionDto
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
   attachedJobs: number,
   guid: string,
+}
+
+// export interface QuestionForm {
+//   formArray: FormArray<FormControl<QuestionFormRow>>,
+// }
+
+//export interface QuestionFormRow extends QuestionDto {
+export interface QuestionFormRow {
+  dto: FormControl<QuestionDto>,
+  control: FormControl<string | null>,
 }
 
 export interface QuestionFilter {

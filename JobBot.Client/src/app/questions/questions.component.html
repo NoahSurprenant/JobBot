@@ -1,7 +1,7 @@
 <div class="space-x-4 place-self-center mt-2">
     <x-button [disabled]="x.isLoading()" (clicked)="clicked()">Refresh</x-button>
-    <x-button [disabled]="x.isLoading() || !form().dirty" (clicked)="save()">Save</x-button>
-    <x-button [disabled]="x.isLoading() || !form().dirty" (clicked)="reset()">Discard</x-button>
+    <x-button [disabled]="x.isLoading() || !formArray.dirty" (clicked)="save()">Save</x-button>
+    <x-button [disabled]="x.isLoading() || !formArray.dirty" (clicked)="reset()">Discard</x-button>
 </div>
 
 <!-- No need to have so many filters when we are already filtering by job -->
@@ -14,13 +14,14 @@
 </div>
 }
 
-<form [formGroup]="form()">
 <div class="grid grid-cols-[minmax(100px,_1fr)_minmax(100px,_1fr)_minmax(100px,_.25fr)_minmax(100px,_.25fr)] mx-4">
     <div class="font-bold flex items-center py-1.5">Label</div>
     <div class="font-bold flex items-center py-1.5">Value</div>
     <div class="font-bold flex items-center py-1.5">Question Kind</div>
     <div class="font-bold flex items-center py-1.5">Job Count</div>
-@for (question of current().results; track question.label) {
+@for (fc of formArray.controls; track fc.value.dto?.label) {
+@let question = fc.value.dto!;
+<ng-container [formGroup]="fc">
 <div [ngClass]="{'bg-purple-300': isEven($index), 'bg-purple-400': !isEven($index)}" class="flex items-center py-1.5 animate-fade-in">
     {{question.label}}
 </div>
@@ -31,13 +32,13 @@
             {{question.value}}
         }
         @case ('ComboBox') {
-            <x-dropdown [formControlName]="question.guid" [options]="question.options!"></x-dropdown>
+            <x-dropdown formControlName="control" [options]="question.options!"></x-dropdown>
         }
         @case ('Radio') {
-            <x-dropdown [formControlName]="question.guid" [options]="question.options!"></x-dropdown>
+            <x-dropdown formControlName="control" [options]="question.options!"></x-dropdown>
         }
         @case ('SingleLine') {
-            <x-input [formControlName]="question.guid" [type]="question.inputType!"></x-input>
+            <x-input formControlName="control" [type]="question.inputType!"></x-input>
         }
         @default {
             Not supported
@@ -54,8 +55,8 @@
         {{question.attachedJobs}}
     }
 </div>
+</ng-container>
 }
 </div>
-</form>
 
 <x-paginator [paginationResult]="current()" class="mt-2 place-self-center" [(pageNumber)]="pageNumber" [(pageSize)]="pageSize" ></x-paginator>
