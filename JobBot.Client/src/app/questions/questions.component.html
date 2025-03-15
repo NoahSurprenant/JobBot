@@ -1,7 +1,6 @@
 <div class="space-x-4 place-self-center mt-2">
     <x-button [disabled]="x.isLoading()" (clicked)="clicked()">Refresh</x-button>
     <x-button [disabled]="x.isLoading() || !formArray.dirty" (clicked)="save()">Save</x-button>
-    <x-button [disabled]="x.isLoading() || !formArray.dirty" (clicked)="reset()">Discard</x-button>
 </div>
 
 <!-- No need to have so many filters when we are already filtering by job -->

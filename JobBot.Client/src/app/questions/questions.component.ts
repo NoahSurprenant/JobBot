@@ -4,7 +4,6 @@ import { ToastService } from '../toast.service';
 import { ButtonComponent } from '../shared/button/button.component';
 import { InputComponent } from '../shared/input/input.component';
 import { FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { QuestionBase, QuestionControlService } from '../questionControl.service';
 import { DropdownComponent } from '../shared/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
@@ -35,14 +34,13 @@ export class QuestionsComponent implements OnInit {
 
   constructor(private http: HttpClient,
     private toastService: ToastService,
-    private qcs: QuestionControlService,
     private fb: FormBuilder) {
       
     this.formArray = fb.nonNullable.array<FormGroup<QuestionFormRow>>([]);
 
     effect(() => {
+      
       const x = this.x.value();
-      console.log(x);
       if (x)
         this.current.set(x);
     })
@@ -106,32 +104,12 @@ export class QuestionsComponent implements OnInit {
     this.x.reload();
   }
 
-  reset(): void {
-    //this.clicked();
-    // TODO: do we even need this if we can reload??
-    this.formArray.reset();
-  }
-
   save(): void {
-    const dirtyControls: { [key: string]: string | null } = {};
-    const dirtyDto: QuestionDto[] = [];
-
-    // TODO: Fix this!
-    // Object.keys(this.form().controls).forEach(controlName => {
-    //   const control = this.form().get(controlName);
-    //   if (control && control.dirty) {
-    //     dirtyControls[controlName] = control.value;
-    //     let dto = this.current().results.find(x => x.guid == controlName);
-    //     if (dto) {
-    //       dto = {...dto};
-    //       dto.value = control.value;
-    //       dirtyDto.push(dto);
-    //     }
-    //   }
-    // });
-
-    console.log(dirtyControls);
-    console.log(dirtyDto);
+    const dirtyDto = this.formArray.controls.filter(x => x.dirty).map(x => {
+      const dto = {...x.value.dto!};
+      dto.value = x.value.control ?? null;
+      return dto;
+    });
 
     this.http.post('api/SaveQuestions', dirtyDto)
       .pipe(finalize(() => {
@@ -141,16 +119,6 @@ export class QuestionsComponent implements OnInit {
         next: () => this.toastService.show('Success'),
         error: () => this.toastService.show('Error'),
       });
-  }
-
-  toQuestionBase(x: QuestionDto[]): QuestionBase<string>[] {
-    return x.map(t => new QuestionBase<string>({
-      value: t.value ?? undefined,
-      key: t.guid,
-      //label: t.label,
-      //required: false,
-      //controlType: (t.questionKind == 'SingleLine' || t.questionKind == 'AutoLine') ? 'textbox' : (t.questionKind == 'ComboBox' || t.questionKind == 'Radio') ? 'dropdown' : ''
-    }));
   }
 
   pageSize = signal(10);
@@ -169,13 +137,7 @@ export class QuestionsComponent implements OnInit {
             "Content-Type": "application/json",
           },
         })
-        .then(x => x.json() as Promise<PaginationResult<QuestionDto>>)
-        .then(x => {
-          // TODO: Maybe add backend guid???
-          x.results.forEach(x => x.guid = x.label.replaceAll('.', ''));
-          //x.results.forEach(x => x.guid = this.uuidv4());
-          return x;
-        });
+        .then(x => x.json() as Promise<PaginationResult<QuestionDto>>);
     },
   });
 
@@ -199,14 +161,8 @@ export interface QuestionDto
   options: string[] | null,
   inputType: "text" | "tel" | "url" | "number" | "email" | "password" | null,
   attachedJobs: number,
-  guid: string,
 }
 
-// export interface QuestionForm {
-//   formArray: FormArray<FormControl<QuestionFormRow>>,
-// }
-
-//export interface QuestionFormRow extends QuestionDto {
 export interface QuestionFormRow {
   dto: FormControl<QuestionDto>,
   control: FormControl<string | null>,

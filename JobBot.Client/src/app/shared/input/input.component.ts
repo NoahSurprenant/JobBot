@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, forwardRef, Inject, Injector, input, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormControl, FormControlDirective, FormControlName, FormGroupDirective, NG_VALUE_ACCESSOR, NgControl, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, forwardRef, Inject, Injector, input, OnDestroy } from '@angular/core';
+import { ControlValueAccessor, FormControl, FormControlDirective, FormControlName, FormGroupDirective, NG_VALUE_ACCESSOR, NgControl, NgModel, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'x-input',
@@ -17,41 +18,45 @@ import { ControlValueAccessor, FormControl, FormControlDirective, FormControlNam
     }
   ]
 })
-export class InputComponent implements ControlValueAccessor, OnInit {
+export class InputComponent implements ControlValueAccessor, OnDestroy {
   type = input<"text" | "tel" | "url" | "number" | "email" | "password">("text");
   placeholder = input<string>('');
   required = input<boolean>(false);
   displayErrors = input<boolean>(true);
   convertEmptyToNull = input<boolean>(true);
 
+  private subscription?: Subscription;
+  private subscriptionToNull?: Subscription;
   public control!: FormControl;
-  protected onTouched: (() => void) | undefined;
-  protected onChange: ((value: string) => void) | undefined;
 
   constructor(@Inject(Injector) private injector: Injector, private _cdr: ChangeDetectorRef) {
   }
 
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+    this.subscriptionToNull?.unsubscribe();
+  }
+
   // Based on https://stackoverflow.com/questions/45755958/how-to-get-formcontrol-instance-from-controlvalueaccessor
   // and https://levelup.gitconnected.com/angular-get-control-in-controlvalueaccessor-b7f09a485fba
-  ngOnInit(): void {
-    this.setControl();
-  }
   
   private setControl() {
     const injectedControl = this.injector.get(NgControl);
 
     switch (injectedControl.constructor) {
-      // case NgModel: {
-      //   const { control, update } = injectedControl as NgModel;
-      //   this.control = control;
-      //   this.control.valueChanges
-      //     .pipe(
-      //       tap((value: T) => update.emit(value)),
-      //       takeUntil(this.destroy),
-      //     )
-      //     .subscribe();
-      //   break;
-      // }
+      case NgModel: {
+        const ngControl = injectedControl as NgModel;
+        this.control = ngControl.control;
+
+        this.subscription?.unsubscribe();
+        this.subscription = this.control.valueChanges
+          .subscribe((value) => {
+            if (ngControl.model !== value || ngControl.viewModel !== value) {
+              ngControl.viewToModelUpdate(value);
+            }
+          });
+        break;
+      }
       case FormControlName: {
         this.control = this.injector.get(FormGroupDirective).getControl(injectedControl as FormControlName);
         break;
@@ -61,36 +66,24 @@ export class InputComponent implements ControlValueAccessor, OnInit {
         break;
       }
     }
-
     // TODO: fix this?
-    // this.control.events.subscribe({
-    //   next: (x) => {
-    //     if (this.convertEmptyToNull() && x.source.value === '')
-    //       this.control.patchValue(null, { emitEvent: false });
-    //   },
-    // })
+    this.subscriptionToNull?.unsubscribe();
+    this.subscriptionToNull = this.control.events.subscribe({
+      next: (x) => {
+        if (this.convertEmptyToNull() && x.source.value === '')
+          this.control.patchValue(null, { emitEvent: false });
+      },
+    })
   }
 
-  writeValue(obj: string): void {
-    this.setControl(); // TODO: Is this the right place to do this?
-    this.setValue(obj, false);
+  writeValue(obj: any): void {
+    this.setControl();
     this._cdr.markForCheck();
   }
 
-  protected setValue(value: string, emitEvent: boolean) {
-    this.control.patchValue(value, {emitEvent: false});
-    if (emitEvent && this.onChange) {
-        this.onChange(value);
-        if (this.onTouched)
-          this.onTouched();
-    }
-  }
-
   registerOnChange(fn: any): void {
-    this.onChange = fn;
   }
   registerOnTouched(fn: any): void {
-    this.onTouched = fn;
   }
 
   errors(): string {
