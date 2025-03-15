@@ -69,7 +69,10 @@ public class ApiController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter, [FromBody] QuestionFilter questionFilter, CancellationToken ct)
+    public async Task<PaginationResult<QuestionDto>> Questions([FromQuery] PaginationFilter filter,
+        [FromQuery] string orderBy,
+        [FromBody] QuestionFilter questionFilter,
+        CancellationToken ct)
     {
         var q = _context.Questions.AsQueryable();
 
@@ -83,8 +86,14 @@ public class ApiController : ControllerBase
             q = q.Where(x => x.JobPostingQuestions.Any(x => x.JobPostingID == questionFilter.JobID));
         }
 
-        var x = q.Select(x => new { x.Label, x.Value, x.QuestionKind, Options = (string[]?)null, InputType = (InputType?)x.InputType, x.JobPostingQuestions.Count })
-                .Select(x => new QuestionDto(x.Label, x.Value, x.QuestionKind,
+        var q2 = q.Select(x => new { x.Label, x.Value, x.QuestionKind, Options = (string[]?)null, InputType = (InputType?)x.InputType, x.JobPostingQuestions.Count });
+
+        if (orderBy is "Label")
+            q2 = q2.OrderBy(x => x.Label);
+        else
+            q2 = q2.OrderByDescending(x => x.Count);
+
+        var x = q2.Select(x => new QuestionDto(x.Label, x.Value, x.QuestionKind,
                 x.QuestionKind == QuestionKind.ComboBox || x.QuestionKind == QuestionKind.Radio ? _context.Options.Where(o => o.Label == x.Label && o.QuestionKind == x.QuestionKind).Select(o => o.Value).ToArray() : null,
                 x.InputType, x.Count));
 

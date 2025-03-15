@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, forwardRef, Inject, Injector, input, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormControl, FormControlDirective, FormControlName, FormGroupDirective, NG_VALUE_ACCESSOR, NgControl, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, forwardRef, Inject, Injector, input, OnDestroy } from '@angular/core';
+import { ControlValueAccessor, FormControl, FormControlDirective, FormControlName, FormGroupDirective, NG_VALUE_ACCESSOR, NgControl, NgModel, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'x-dropdown',
@@ -17,59 +18,57 @@ import { ControlValueAccessor, FormControl, FormControlDirective, FormControlNam
       }
     ]
 })
-export class DropdownComponent<T extends string | number | boolean | null> implements ControlValueAccessor, OnInit {
+export class DropdownComponent<T extends string | number | boolean | null> implements ControlValueAccessor, OnDestroy {
   displayErrors = input<boolean>(true);
+  addNullOption = input<boolean>(false);
   options = input.required<T[]>();
+
+  private subscription?: Subscription;
   public control!: FormControl<T>;
   
-  constructor(@Inject(Injector) private injector: Injector) {
+  constructor(@Inject(Injector) private injector: Injector, private _cdr: ChangeDetectorRef) {
   }
 
-  // Based on https://stackoverflow.com/questions/45755958/how-to-get-formcontrol-instance-from-controlvalueaccessor
-  // and https://levelup.gitconnected.com/angular-get-control-in-controlvalueaccessor-b7f09a485fba
-  ngOnInit(): void {
-    const injectedControl = this.injector.get(NgControl);
+  ngOnDestroy(): void {
+    this.subscription?.unsubscribe();
+  }
 
-    switch (injectedControl.constructor) {
-      // case NgModel: {
-      //   const { control, update } = injectedControl as NgModel;
-
-      //   this.control = control;
-
-      //   this.control.valueChanges
-      //     .pipe(
-      //       tap((value: T) => update.emit(value)),
-      //       takeUntil(this.destroy),
-      //     )
-      //     .subscribe();
-      //   break;
-      // }
-      case FormControlName: {
-        this.control = this.injector.get(FormGroupDirective).getControl(injectedControl as FormControlName);
-        break;
+  private setControl() {
+      const injectedControl = this.injector.get(NgControl);
+  
+      switch (injectedControl.constructor) {
+        case NgModel: {
+          const ngControl = injectedControl as NgModel;
+          this.control = ngControl.control;
+  
+          this.subscription?.unsubscribe();
+          this.subscription = this.control.valueChanges
+            .subscribe((value) => {
+              if (ngControl.model !== value || ngControl.viewModel !== value) {
+                ngControl.viewToModelUpdate(value);
+              }
+            });
+          break;
+        }
+        case FormControlName: {
+          this.control = this.injector.get(FormGroupDirective).getControl(injectedControl as FormControlName);
+          break;
+        }
+        default: {
+          this.control = (injectedControl as FormControlDirective).form as FormControl;
+          break;
+        }
       }
-      default: {
-        this.control = (injectedControl as FormControlDirective).form as FormControl<T>;
-        break;
-      }
-    }
-
-    this.control.events.subscribe({
-      next: (x) => {
-        if (x.source.value === 'null')
-          this.control.patchValue(null as T, { emitEvent: false });
-      },
-    })
   }
   
   writeValue(obj: any): void {
-    //this.control.patchValue(obj);
+    this.setControl();
+    this._cdr.markForCheck();
   }
+
   registerOnChange(fn: any): void {
-    //this.control.valueChanges.subscribe(val => fn(val))
   }
   registerOnTouched(fn: any): void {
-    //this.control.valueChanges.subscribe(val => fn(val))
   }
 
   errors(): string {
