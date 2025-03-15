@@ -32,9 +32,11 @@ export class QuestionsComponent implements OnInit {
 
   formArray: FormArray<FormGroup<QuestionFormRow>>;
 
+  orderBy = signal<'Label' | 'Job Count'>('Label');
+
   constructor(private http: HttpClient,
     private toastService: ToastService,
-    private fb: FormBuilder) {
+    fb: FormBuilder) {
       
     this.formArray = fb.nonNullable.array<FormGroup<QuestionFormRow>>([]);
 
@@ -125,11 +127,15 @@ export class QuestionsComponent implements OnInit {
   pageNumber = signal(1);
 
   x = resource({
-    request: () => ({ pageSize: this.pageSize(), pageNumber: this.pageNumber(), questionFilter: this.questionFilter() }),
+    request: () => ({ pageSize: this.pageSize(),
+                      pageNumber: this.pageNumber(),
+                      questionFilter: this.questionFilter(),
+                      orderBy: this.orderBy() }),
     loader: async ({request}) => {
       const params = new URLSearchParams();
       params.set('pageSize', request.pageSize.toString());
       params.set('pageNumber', request.pageNumber.toString());
+      params.set('orderBy', request.orderBy);
       return await fetch(`api/questions?${params}`, {
           method: 'POST',
           body: JSON.stringify(request.questionFilter),

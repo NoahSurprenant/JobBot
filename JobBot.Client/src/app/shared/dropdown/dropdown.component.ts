@@ -20,6 +20,7 @@ import { Subscription } from 'rxjs';
 })
 export class DropdownComponent<T extends string | number | boolean | null> implements ControlValueAccessor, OnDestroy {
   displayErrors = input<boolean>(true);
+  addNullOption = input<boolean>(false);
   options = input.required<T[]>();
 
   private subscription?: Subscription;

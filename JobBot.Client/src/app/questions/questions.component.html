@@ -10,6 +10,8 @@
     @if (questionFilter().value != null) {
         <x-input [formControl]="valueControl" class="inline-block"></x-input>
     }
+
+    <x-dropdown [(ngModel)]="orderBy" [options]="['Label', 'Job Count']"></x-dropdown>
 </div>
 }
 
@@ -31,10 +33,10 @@
             {{question.value}}
         }
         @case ('ComboBox') {
-            <x-dropdown formControlName="control" [options]="question.options!"></x-dropdown>
+            <x-dropdown formControlName="control" [options]="question.options!" [addNullOption]="true"></x-dropdown>
         }
         @case ('Radio') {
-            <x-dropdown formControlName="control" [options]="question.options!"></x-dropdown>
+            <x-dropdown formControlName="control" [options]="question.options!" [addNullOption]="true"></x-dropdown>
         }
         @case ('SingleLine') {
             <x-input formControlName="control" [type]="question.inputType!"></x-input>
